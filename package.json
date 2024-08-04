@@ -1,0 +1,62 @@
+{
+  "name": "electron-vue3-boilerplate",
+  "version": "1.0.1",
+  "description": "A Electron + Vue3 boilerplate.",
+  "author": {
+    "name": "winsoft666",
+    "url": "https://github.com/winsoft666"
+  },
+  "repository": "https://github.com/winsoft666/electron-vue3-boilerplate",
+  "main": "build/main/main.js",
+  "scripts": {
+    "dev": "node scripts/dev-server.mjs development",
+    "test": "node scripts/dev-server.mjs test",
+    "production": "node scripts/dev-server.mjs production",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "new:window": "node scripts/create-window.mjs",
+    "new:ipc": "node scripts/create-ipc.mjs",
+    "build": "node scripts/build.mjs && electron-forge make",
+    "build:win32": "node scripts/build.mjs && electron-forge make --platform=win32 --arch=ia32",
+    "build:win64": "node scripts/build.mjs && electron-forge make --platform=win32 --arch=x64",
+    "build:mac": "node scripts/build.mjs && electron-forge make --platform=darwin",
+    "build:linux": "node scripts/build.mjs && electron-forge make --platform=linux",
+    "build:nsis-win32": "node scripts/build.mjs && electron-forge package --platform=win32 --arch=ia32 && ./setup/NSIS/nsis-3.08/makensis.exe ./setup/NSIS/win-setup-x86.nsi",
+    "build:nsis-win64": "node scripts/build.mjs && electron-forge package --platform=win32 --arch=x64 && ./setup/NSIS/nsis-3.08/makensis.exe ./setup/NSIS/win-setup-x64.nsi"
+  },
+  "dependencies": {
+    "@xterm/xterm": "^5.5.0",
+    "axios": "^1.6.7",
+    "electron-log": "^5.1.0",
+    "uuid": "^9.0.1",
+    "xterm": "^5.3.0",
+    "xterm-addon-fit": "^0.8.0"
+  },
+  "devDependencies": {
+    "@arco-design/web-vue": "^2.56.0",
+    "@electron-forge/cli": "^7.4.0",
+    "@electron-forge/maker-dmg": "^7.4.0",
+    "@electron-forge/maker-squirrel": "^7.4.0",
+    "@electron-forge/maker-zip": "^7.4.0",
+    "@fortawesome/fontawesome-svg-core": "^6.5.1",
+    "@fortawesome/free-brands-svg-icons": "^6.5.1",
+    "@fortawesome/free-regular-svg-icons": "^6.5.1",
+    "@fortawesome/free-solid-svg-icons": "^6.5.1",
+    "@fortawesome/vue-fontawesome": "^3.0.5",
+    "@typescript-eslint/eslint-plugin": "^7.11.0",
+    "@typescript-eslint/parser": "^7.11.0",
+    "@vitejs/plugin-vue": "^5.0.5",
+    "@vue/eslint-config-typescript": "^13.0.0",
+    "chalk": "^5.3.0",
+    "chokidar": "^3.5.3",
+    "electron": "^30.0.9",
+    "eslint": "^9.4.0",
+    "eslint-plugin-vue": "^9.20.1",
+    "typescript": "^5.3.3",
+    "unplugin-vue-components": "^0.27.0",
+    "vite": "^5.2.12",
+    "vue": "^3.4.15",
+    "vue-eslint-parser": "^9.4.2",
+    "vue-router": "^4.3.0"
+  }
+}
