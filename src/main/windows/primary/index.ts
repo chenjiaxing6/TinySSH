@@ -4,6 +4,10 @@ import appState from "../../app-state";
 import WindowBase from "../window-base";
 import FramelessWindow from "../frameless";
 import axiosInst from "../../../lib/axios-inst/main";
+import {WebSocket} from "vite";
+import { WebSocketServer } from "ws";
+const SSH2Client = require('ssh2').Client;
+const pty = require('node-pty');
 
 class PrimaryWindow extends WindowBase{
   constructor(){
@@ -25,6 +29,62 @@ class PrimaryWindow extends WindowBase{
     });
 
     this.openRouter("/primary");
+  }
+
+
+  startWebSocketServer() {
+    const sshConfig = {
+      host: '192.168.0.103',
+      port: 22,
+      username: '',
+      password: ''
+    };
+
+    let sshClient = new SSH2Client();
+    sshClient.on('ready', () => {
+      console.log('SSH连接成功');
+    }).on('error', (err) => {
+      console.error('SSH连接失败:', err);
+    }).connect(sshConfig);
+
+    console.log("开始ws")
+    const wss = new WebSocketServer({ port: 8080 });
+    let ptyProcess = null;
+    wss.on("connection", (ws) => {
+      console.log("New WebSocket connection");
+
+      // 立即创建 pty 进程
+      const ptyProcess = pty.spawn('ssh', [
+        '-tt',  // 强制分配伪终端
+        `${sshConfig.username}@${sshConfig.host}`,
+        '-p', sshConfig.port.toString()
+      ], {
+        name: 'xterm-color',
+        cols: 80,
+        rows: 30,
+        cwd: process.env.HOME,
+        env: process.env
+      });
+
+      // 监听 pty 进程的输出
+      ptyProcess.on('data', (data) => {
+        console.log(`ssh data: ${data}`);
+        ws.send(data);
+      });
+
+      ws.on("message", (message) => {
+        console.log(`Received message: ${message}`);
+        // 直接使用 ptyProcess，因为它已经被初始化
+        ptyProcess.write(message);
+      });
+
+      ws.on("close", () => {
+        console.log("WebSocket connection closed");
+        ptyProcess.kill();
+      });
+    });
+
+    console.log("WebSocket server is listening on ws://localhost:48821");
   }
 
   protected registerIpcMainHandler(): void{
@@ -78,6 +138,10 @@ class PrimaryWindow extends WindowBase{
       await delay(1500);
       appState.allowExitApp = true;
       app.quit();
+    });
+
+    ipcMain.on("enable-ws", (event, url) => {
+      this.startWebSocketServer()
     });
 
     ipcMain.on("http-get-request", (event, url) => {

@@ -99,6 +99,7 @@ import {IconSettings, IconGithub} from '@arco-design/web-vue/es/icon';
 import {Terminal} from "xterm"
 import {FitAddon} from 'xterm-addon-fit'
 import "xterm/css/xterm.css"
+import { AttachAddon } from "xterm-addon-attach";
 
 const terminalContainer = ref(null);
 const terminalRefs = ref({})
@@ -165,16 +166,21 @@ const treeData = [
   },
 ];
 const handleSelect = (keys, event) => {
+  getElectronApi().enableWs();
   data.value.push({
     id: event.node.key,
     title: event.node.title,
     ip: event.node.title
-  })
+  });
+
   nextTick(() => {
-    //初始化terminal
     let terminal = null;
     let currentLine = '';
     let fitAddon = null;
+    let socket = null;
+
+    // 创建WebSocket连接
+    socket = new WebSocket(`ws://127.0.0.1:8080`); // 假设WebSocket服务器在8080端口
     terminal = new Terminal({
       cursorBlink: true,
       fontSize: 14,
@@ -187,37 +193,15 @@ const handleSelect = (keys, event) => {
     terminal.open(terminalRefs.value[`terminalContainer${event.node.key}`]);
     fitAddon.fit();
 
-    window.onresize = function () { // 窗口尺寸变化时，终端尺寸自适应
+    window.onresize = function () {
       fitAddon.fit();
     };
 
     // 监听键盘输入
-    terminal.onKey(({ key, domEvent }) => {
-      const printable = !domEvent.altKey && !domEvent.ctrlKey && !domEvent.metaKey;
-
-      if (domEvent.keyCode === 13) { // Enter key
-        // 发送当前行到后端
-        //sendToBackend(currentLine);
-        console.log(currentLine)
-        terminal.write('\r\n'); // 新的一行
-        currentLine = '';
-      } else if (domEvent.keyCode === 8) { // Backspace key
-        if (currentLine.length > 0) {
-          currentLine = currentLine.slice(0, -1);
-          terminal.write('\b \b');
-        }
-      } else if (printable) {
-        currentLine += key;
-        terminal.write(key);
-      }
-    });
-
-    // 显示提示符
-    terminal.write('$ ');
-    terminal.write('Welcome!\r\n');
+    let attachAddon = new AttachAddon(socket);
+    terminal.loadAddon(attachAddon);
   });
 };
-
 // 定义响应式数据
 const size = ref(0.25);
 
@@ -259,7 +243,7 @@ getElectronApi().onShowClosePrimaryWinMsgbox(() => {
 .terminal-wrapper {
   background-color: red;
   width: 100%;
-  height: 100%;
+  height: 95%;
 }
 
 .terminal-container {
