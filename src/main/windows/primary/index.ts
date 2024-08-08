@@ -9,7 +9,9 @@ import { WebSocketServer } from "ws";
 const SSH2Client = require('ssh2').Client;
 const pty = require('node-pty');
 
+
 class PrimaryWindow extends WindowBase{
+  private servers: Map<string,any> = new Map();
   constructor(){
     // 调用WindowBase构造函数创建窗口
     super({
@@ -32,30 +34,20 @@ class PrimaryWindow extends WindowBase{
   }
 
 
-  startWebSocketServer() {
-    const sshConfig = {
-      host: '192.168.0.103',
-      port: 22,
-      username: '',
-      password: ''
-    };
+  startWebSocketServer(key, sshConfig) {
+    if (this.servers.has(key)) {
+      console.log(`WebSocket server for key ${key} already exists.`);
+      return;
+    }
 
-    let sshClient = new SSH2Client();
-    sshClient.on('ready', () => {
-      console.log('SSH连接成功');
-    }).on('error', (err) => {
-      console.error('SSH连接失败:', err);
-    }).connect(sshConfig);
+    const port = this.getAvailablePort();
+    const wss = new WebSocketServer({ port });
+    debugger
+    wss.on('connection', (ws) => {
+      console.log(`New WebSocket connection for key ${key}`);
 
-    console.log("开始ws")
-    const wss = new WebSocketServer({ port: 8080 });
-    let ptyProcess = null;
-    wss.on("connection", (ws) => {
-      console.log("New WebSocket connection");
-
-      // 立即创建 pty 进程
       const ptyProcess = pty.spawn('ssh', [
-        '-tt',  // 强制分配伪终端
+        '-tt',
         `${sshConfig.username}@${sshConfig.host}`,
         '-p', sshConfig.port.toString()
       ], {
@@ -66,25 +58,30 @@ class PrimaryWindow extends WindowBase{
         env: process.env
       });
 
-      // 监听 pty 进程的输出
       ptyProcess.on('data', (data) => {
-        console.log(`ssh data: ${data}`);
+        console.log(`SSH data for ${key}: ${data}`);
         ws.send(data);
       });
 
-      ws.on("message", (message) => {
-        console.log(`Received message: ${message}`);
-        // 直接使用 ptyProcess，因为它已经被初始化
+      ws.on('message', (message) => {
+        console.log(`Received message for ${key}: ${message}`);
         ptyProcess.write(message);
       });
 
-      ws.on("close", () => {
-        console.log("WebSocket connection closed");
+      ws.on('close', () => {
+        console.log(`WebSocket connection closed for ${key}`);
         ptyProcess.kill();
       });
     });
 
-    console.log("WebSocket server is listening on ws://localhost:48821");
+    this.servers.set(key, { wss, port, sshConfig });
+    console.log(`WebSocket server for ${key} is listening on ws://localhost:${port}`);
+  }
+
+  getAvailablePort() {
+    // 这里应该实现一个逻辑来获取可用的端口号
+    // 为简化示例，这里返回一个固定值
+    return 48821 + this.servers.size;
   }
 
   protected registerIpcMainHandler(): void{
@@ -141,7 +138,12 @@ class PrimaryWindow extends WindowBase{
     });
 
     ipcMain.on("enable-ws", (event, url) => {
-      this.startWebSocketServer()
+      this.startWebSocketServer(url,{
+        host: '192.168.0.103',
+        port: 22,
+        username: 'chenjiaxing',
+        password: 'pass1'
+      })
     });
 
     ipcMain.on("http-get-request", (event, url) => {

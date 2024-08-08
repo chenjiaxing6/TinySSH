@@ -17,5 +17,5 @@ contextBridge.exposeInMainWorld("primaryWindowAPI", {
     asyncExitApp: () => ipcRenderer.invoke("async-exit-app"),
     minToTray: () => ipcRenderer.send("min-to-tray"),
     httpGetRequest: (url: string) => ipcRenderer.send("http-get-request", url),
-    enableWs: () => ipcRenderer.send("enable-ws"),
+    enableWs: (key:string) => ipcRenderer.send("enable-ws",key),
 });

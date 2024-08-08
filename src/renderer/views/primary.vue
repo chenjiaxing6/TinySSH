@@ -161,12 +161,12 @@ const treeData = [
   },
   {
     title: '192.168.0.103',
-    key: '192.168.0.103',
+    key: '10001',
     icon: () => h(IconComputer),
   },
 ];
 const handleSelect = (keys, event) => {
-  getElectronApi().enableWs();
+  getElectronApi().enableWs(event.node.key);
   data.value.push({
     id: event.node.key,
     title: event.node.title,
@@ -180,7 +180,7 @@ const handleSelect = (keys, event) => {
     let socket = null;
 
     // 创建WebSocket连接
-    socket = new WebSocket(`ws://127.0.0.1:8080`); // 假设WebSocket服务器在8080端口
+    socket = new WebSocket(`ws://127.0.0.1:48821/${event.node.key}`); // 假设WebSocket服务器在8080端口
     terminal = new Terminal({
       cursorBlink: true,
       fontSize: 14,
