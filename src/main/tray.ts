@@ -9,8 +9,8 @@ import appState, { AppEnv } from "./app-state";
 // 创建系统托盘
 function CreateAppTray() : Tray{
   const iconPath = process.platform === "win32" ? 
-    path.join(appState.mainStaticPath, "tray.ico") : 
-    path.join(appState.mainStaticPath, "tray.png");
+    path.join(appState.mainStaticPath, "icon.ico") :
+    path.join(appState.mainStaticPath, "16x16.png");
 
   const tray = new Tray(iconPath);
 
@@ -58,8 +58,10 @@ function CreateAppTray() : Tray{
   }
 
   tray.setContextMenu(contextMenu);
-  tray.setToolTip("A Electron + Vue3 boilerplate");
-  tray.setTitle("electron-vue3-boilerplate");
+  // 设置托盘提示
+  tray.setToolTip("");
+  // 设置托盘标题
+  tray.setTitle("");
 
   return tray;
 }
