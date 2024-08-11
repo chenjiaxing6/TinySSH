@@ -4,10 +4,12 @@ import appState from "../../app-state";
 import WindowBase from "../window-base";
 import FramelessWindow from "../frameless";
 import axiosInst from "../../../lib/axios-inst/main";
-import {WebSocket} from "vite";
 import { WebSocketServer } from "ws";
 const SSH2Client = require('ssh2').Client;
 const pty = require('node-pty');
+import {registerFolderHandlers} from "./handle/folderHandler";
+import { initializeDatabase } from '../../database/connection';
+
 
 
 class PrimaryWindow extends WindowBase{
@@ -31,6 +33,10 @@ class PrimaryWindow extends WindowBase{
     });
 
     this.openRouter("/primary");
+    // initializeDatabase();
+    // userOps.createUser("11", "test", "123456","11");
+    initializeDatabase();
+    this.registerHandles();
   }
 
 
@@ -161,6 +167,10 @@ class PrimaryWindow extends WindowBase{
           });
         });
     });
+  }
+
+  private registerHandles() {
+    registerFolderHandlers();
   }
 }
 

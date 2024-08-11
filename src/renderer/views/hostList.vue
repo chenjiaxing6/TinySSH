@@ -12,16 +12,13 @@
       <div class="tree-container">
         <div style="background-color: rgb(242, 242, 242);height: 100%;padding: 8px">
           <a-tree :data="treeData" @select="handleSelect">
-            <template #icon>
-              <IconFolder/>
-            </template>
           </a-tree>
         </div>
         <div class="tree-footer">
           <a-button shape="circle" size="mini">
             <icon-plus/>
           </a-button>
-          <a-button shape="circle" size="mini">
+          <a-button shape="circle" size="mini" @click="openCreateFolder">
             <icon-folder/>
           </a-button>
           <a-button shape="circle" size="mini">
@@ -54,6 +51,23 @@
       </div>
     </template>
   </a-split>
+
+  <a-modal
+      width="300px"
+      v-model:visible="createFolderVisiable"
+      title="添加文件夹"
+      @ok="handleFolderOk"
+      @cancel="handleFolderCancel"
+  >
+    <a-form :model="folderForm">
+      <a-input
+          v-model="folderForm.folderName"
+          placeholder="请输入文件夹名称"
+          readonly
+      >
+      </a-input>
+    </a-form>
+  </a-modal>
 </template>
 <script setup lang="ts">
 import {reactive, ref, h, onMounted, nextTick} from 'vue';
@@ -79,19 +93,58 @@ function getElectronApi() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return window.primaryWindowAPI;
 }
+
 const setTerminalRef = (el, id) => {
   if (el) {
     terminalRefs.value[`terminalContainer${id}`] = el
   }
 }
 
-onMounted(() => {
+const createFolderVisiable = ref(false);
+const folderForm = reactive({
+  folderName: '',
+});
 
+function handleFolderOk() {
+  createFolderVisiable.value = false;
+}
+
+function handleFolderCancel() {
+  createFolderVisiable.value = false;
+}
+
+function openCreateFolder() {
+  // createFolderVisiable.value = true;
+  // getElectronApi().createFolder("hello ");
+}
+
+function getTreeData() {
+  getElectronApi().getTreeInfo().then(res => {
+    //设置图标
+    res.forEach(addIconToProps);
+    treeData.value = res;
+    treeData.value = res;
+  })
+}
+
+const addIconToProps = (node) => {
+  if (node.type === 'folder') {
+    node.icon = () => h(IconFolder);
+  } else if (node.type === 'ssh') {
+    node.icon = () => h(IconComputer);
+  }
+  if (node.children) {
+    node.children.forEach(addIconToProps);
+  }
+};
+
+
+onMounted(() => {
+  getTreeData()
 })
 
 let count = 5;
 const data = ref([]);
-
 
 
 const handleAdd = () => {
@@ -106,40 +159,8 @@ const handleDelete = (key) => {
   data.value = data.value.filter(item => item.id !== key)
 };
 
-const treeData = [
-  {
-    title: '分组1',
-    key: 'node1',
-    children: [
-      {
-        title: '分组1-1',
-        key: '分组1-1',
-      },
-    ],
-  },
-  {
-    title: '分组2',
-    key: 'node3',
-    children: [
-      {
-        title: '192.168.0.101',
-        key: '192.168.0.101',
-        icon: () => h(IconComputer),
-      },
-      {
-        title: '192.168.0.102',
-        key: '192.168.0.102',
-        icon: () => h(IconComputer),
-      },
-    ],
-  },
-  {
-    title: '192.168.0.103',
-    key: '10001',
-    icon: () => h(IconComputer),
-  },
-];
-const handleSelect = (keys:any, event:any) => {
+const treeData = ref([]);
+const handleSelect = (keys: any, event: any) => {
   getElectronApi().enableWs(event.node.key);
   data.value.push({
     id: event.node.key,
