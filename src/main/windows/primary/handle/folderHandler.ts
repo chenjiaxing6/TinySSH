@@ -15,7 +15,7 @@ export function registerFolderHandlers() {
 
         // 创建文件夹树
         folderData.forEach(folder => {
-            folderMap.set(folder.id, { ...folder, type: 'folder', children: [] ,title: folder.folderName,key: folder.id });
+            folderMap.set(folder.id, { ...folder, type: 'folder', children: [] ,title: folder.folderName,key: folder.id+'-folder' });
         });
         debugger
         // 构建树结构
@@ -40,7 +40,7 @@ export function registerFolderHandlers() {
                         ...ssh,
                         type: 'ssh',
                         title: ssh.sshName,
-                        key: ssh.sshId,
+                        key: ssh.sshId+'-ssh',
                         children: [] // SSH 连接没有子节点，但为了统一结构，我们添加一个空数组
                     });
                 }

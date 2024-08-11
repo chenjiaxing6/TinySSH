@@ -11,8 +11,19 @@
     <template #first>
       <div class="tree-container">
         <div style="background-color: rgb(242, 242, 242);height: 100%;padding: 8px">
-          <a-tree :data="treeData" @select="handleSelect">
-          </a-tree>
+          <div @contextmenu.prevent="onContextMenu">
+            <a-tree :data="treeData" @select="handleSelect" :selected-keys="selectedKeys">
+            </a-tree>
+            <div v-if="showContextMenu"
+                 :style="{ position: 'fixed', top: `${menuY}px`, left: `${menuX}px` }"
+                 class="context-menu">
+              <a-menu>
+                <a-menu-item @click="onMenuItemClick('add')">添加</a-menu-item>
+                <a-menu-item @click="onMenuItemClick('edit')">编辑</a-menu-item>
+                <a-menu-item @click="onMenuItemClick('delete')">删除</a-menu-item>
+              </a-menu>
+            </div>
+          </div>
         </div>
         <div class="tree-footer">
           <a-button shape="circle" size="mini">
@@ -138,6 +149,39 @@ const addIconToProps = (node) => {
   }
 };
 
+const showContextMenu = ref(false);
+const menuX = ref(0);
+const menuY = ref(0);
+const selectedNode = ref(null);
+const selectedKeys = ref([]);
+
+const onContextMenu = (event) => {
+  const {__vueParentComponent: parent} = event.target;
+  console.log(parent.attrs);
+  selectedKeys.value = []
+  if (parent.attrs.type === 'ssh') {
+    selectedKeys.value.push(parent.attrs.sshId + '-' + parent.attrs.type);
+  } else {
+    selectedKeys.value.push(parent.attrs.id + '-' + parent.attrs.type);
+  }
+  event.preventDefault();
+  showContextMenu.value = true;
+  menuX.value = event.clientX;
+  menuY.value = event.clientY;
+};
+const onMenuItemClick = (action) => {
+  if (selectedNode.value) {
+    console.log(`Performing ${action} on node:`, selectedNode.value);
+    // 在这里实现相应的操作逻辑
+  }
+  showContextMenu.value = false;
+};
+
+// 点击其他地方时隐藏右键菜单
+document.addEventListener('click', () => {
+  showContextMenu.value = false;
+});
+
 
 onMounted(() => {
   getTreeData()
@@ -161,6 +205,7 @@ const handleDelete = (key) => {
 
 const treeData = ref([]);
 const handleSelect = (keys: any, event: any) => {
+  selectedNode.value = event.selectedNodes[0];
   getElectronApi().enableWs(event.node.key);
   data.value.push({
     id: event.node.key,
@@ -250,5 +295,12 @@ const size = ref(0.25);
 
 :deep(.terminal) {
   height: 100%;
+}
+
+.context-menu {
+  background: white;
+  border: 1px solid #ccc;
+  box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
 }
 </style>
