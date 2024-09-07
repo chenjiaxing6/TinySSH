@@ -6,14 +6,15 @@ import FramelessWindow from "../frameless";
 import axiosInst from "../../../lib/axios-inst/main";
 import { WebSocketServer } from "ws";
 const SSH2Client = require('ssh2').Client;
-const pty = require('node-pty');
-import {registerFolderHandlers} from "./handle/folderHandler";
+import {registerFolderHandlers} from "../../handle/folderHandler";
 import { initializeDatabase } from '../../database/connection';
+import * as sshOps from '../../database/sshOption';
+import SSHHandler from "../../handle/sshHandleser";
 
 
 
 class PrimaryWindow extends WindowBase{
-  private servers: Map<string,any> = new Map();
+  private sshHandler: SSHHandler
   constructor(){
     // 调用WindowBase构造函数创建窗口
     super({
@@ -33,61 +34,12 @@ class PrimaryWindow extends WindowBase{
     });
 
     this.openRouter("/primary");
+    this.sshHandler = new SSHHandler(this._browserWindow!);
     // initializeDatabase();
     // userOps.createUser("11", "test", "123456","11");
     initializeDatabase();
     this.registerHandles();
-  }
-
-
-  startWebSocketServer(key, sshConfig) {
-    if (this.servers.has(key)) {
-      console.log(`WebSocket server for key ${key} already exists.`);
-      return;
-    }
-
-    const port = this.getAvailablePort();
-    const wss = new WebSocketServer({ port });
-    debugger
-    wss.on('connection', (ws) => {
-      console.log(`New WebSocket connection for key ${key}`);
-
-      const ptyProcess = pty.spawn('ssh', [
-        '-tt',
-        `${sshConfig.username}@${sshConfig.host}`,
-        '-p', sshConfig.port.toString()
-      ], {
-        name: 'xterm-color',
-        cols: 80,
-        rows: 30,
-        cwd: process.env.HOME,
-        env: process.env
-      });
-
-      ptyProcess.on('data', (data) => {
-        console.log(`SSH data for ${key}: ${data}`);
-        ws.send(data);
-      });
-
-      ws.on('message', (message) => {
-        console.log(`Received message for ${key}: ${message}`);
-        ptyProcess.write(message);
-      });
-
-      ws.on('close', () => {
-        console.log(`WebSocket connection closed for ${key}`);
-        ptyProcess.kill();
-      });
-    });
-
-    this.servers.set(key, { wss, port, sshConfig });
-    console.log(`WebSocket server for ${key} is listening on ws://localhost:${port}`);
-  }
-
-  getAvailablePort() {
-    // 这里应该实现一个逻辑来获取可用的端口号
-    // 为简化示例，这里返回一个固定值
-    return 48821 + this.servers.size;
+    this.sshHandler.registerHandlers();
   }
 
   protected registerIpcMainHandler(): void{
@@ -138,18 +90,9 @@ class PrimaryWindow extends WindowBase{
     
     ipcMain.handle("async-exit-app", async(event) => {
       // 暂停1500毫秒，模拟退出程序时的清理操作
-      await delay(1500);
+      // await delay(1500);
       appState.allowExitApp = true;
       app.quit();
-    });
-
-    ipcMain.on("enable-ws", (event, url) => {
-      this.startWebSocketServer(url,{
-        host: '192.168.0.103',
-        port: 22,
-        username: 'chenjiaxing',
-        password: 'pass1'
-      })
     });
 
     ipcMain.on("http-get-request", (event, url) => {

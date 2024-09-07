@@ -3136,7 +3136,7 @@ ms@^2.0.0:
     fmix "^0.1.0"
     imul "^1.0.0"
 
-nan@^2.17.0, nan@^2.18.0, nan@^2.19.0:
+nan@^2.18.0, nan@^2.19.0:
   version "2.20.0"
   resolved "https://registry.npmmirror.com/nan/-/nan-2.20.0.tgz#08c5ea813dd54ed16e5bd6505bf42af4f7838ca3"
   integrity sha512-bk3gXBZDGILuuo/6sKtr0DQmSThYHLtNCdSdXk9YkxD/jK6X2vmCyyXBBxyqZ4XcnzTyYEAThfX3DCEnLf6igw==
@@ -3204,6 +3204,11 @@ node-api-version@^0.2.0:
   dependencies:
     semver "^7.3.5"
 
+node-expect@^0.1.0:
+  version "0.1.0"
+  resolved "https://registry.npmmirror.com/node-expect/-/node-expect-0.1.0.tgz#d5d4d6fcd40a1ec81bd55ef56247329a6eb43f09"
+  integrity sha512-gdlHu3B0Z5FhV33Y6wn7jeaoRH3y7KlaXM9RoxxSbRFYv2S4ZLgFe46H1nWjcPtiDAqS8YtDwOGxDFIuPe4ggw==
+
 node-fetch@^2.6.7:
   version "2.7.0"
   resolved "https://registry.npmmirror.com/node-fetch/-/node-fetch-2.7.0.tgz#d0f0fa6e3e2dc1d27efcd8ad99d550bda94d187d"
@@ -3232,13 +3237,6 @@ node-gyp@^9.0.0:
     semver "^7.3.5"
     tar "^6.1.2"
     which "^2.0.2"
-
-node-pty@^1.0.0:
-  version "1.0.0"
-  resolved "https://registry.npmmirror.com/node-pty/-/node-pty-1.0.0.tgz#7daafc0aca1c4ca3de15c61330373af4af5861fd"
-  integrity sha512-wtBMWWS7dFZm/VgqElrTvtfMq4GzJ6+edFI0Y0zyzygUSZMgZdraDUMUhCIvkjhJjme15qWmbyJbtAx4ot4uZA==
-  dependencies:
-    nan "^2.17.0"
 
 nopt@^6.0.0:
   version "6.0.0"

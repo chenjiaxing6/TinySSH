@@ -1,6 +1,6 @@
 import { ipcMain } from 'electron';
-import * as folderOps from '../../../database/folderOption';
-import * as sshOps from '../../../database/sshOption';
+import * as folderOps from '../database/folderOption';
+import * as sshOps from '../database/sshOption';
 
 export function registerFolderHandlers() {
     ipcMain.on("create-folder", (event, message) => {
@@ -41,7 +41,7 @@ export function registerFolderHandlers() {
                         type: 'ssh',
                         title: ssh.sshName,
                         key: ssh.sshId+'-ssh',
-                        children: [] // SSH 连接没有子节点，但为了统一结构，我们添加一个空数组
+                        children: []
                     });
                 }
             }

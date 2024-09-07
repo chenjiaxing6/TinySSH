@@ -45,20 +45,19 @@
     <!--终端-->
     <template #second>
       <div class="tab-container">
-        <a-tabs type="card" :editable="true" @add="handleAdd" @delete="handleDelete" style="height: 100%">
-          <a-tab-pane v-for="(item, index) of data" :key="item.id" :title="item.id" style="height: 100%">
+        <a-tabs
+            type="card"
+            :editable="true"
+            @delete="handleDelete"
+            style="height: 100%"
+            v-model:activeKey="activeTabKey"
+        >
+          <a-tab-pane v-for="(item, index) of data" :key="item.key" :title="item.title" style="height: 100%">
             <div class="terminal-wrapper">
               <div :ref="el => setTerminalRef(el, item.id)" class="terminal-container"></div>
             </div>
           </a-tab-pane>
         </a-tabs>
-        <!--          <a-tabs default-active-key="1" style="height: 100%" type="card-gutter">-->
-        <!--            <a-tab-pane key="1" title="Tab 1" style="height: 100%">-->
-        <!--              <div class="terminal-wrapper">-->
-        <!--                <div ref="terminalContainer" class="terminal-container"></div>-->
-        <!--              </div>-->
-        <!--            </a-tab-pane>-->
-        <!--          </a-tabs>-->
       </div>
     </template>
   </a-split>
@@ -98,12 +97,61 @@ import "xterm/css/xterm.css"
 import {AttachAddon} from "xterm-addon-attach";
 
 const terminalContainer = ref(null);
-const terminalRefs = ref({})
+const terminalRefs: any = ref({})
 
 function getElectronApi() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return window.primaryWindowAPI;
 }
+
+const activeTabKey = ref('');
+// 点击树节点
+const handleSelect = (keys: any, event: any) => {
+  selectedNode.value = event.node;
+  if (event.node.type === 'ssh') {
+    // 生成一个随机ID
+    const randomId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    getElectronApi().getPort(randomId).then((port: any) => {
+      getElectronApi().enableWs(randomId, event.node.sshId);
+      data.value.push({
+        key:randomId,
+        id: event.node.key,
+        title: event.node.title,
+        ip: event.node.title
+      });
+      activeTabKey.value = randomId;
+
+      nextTick(() => {
+
+        let terminal = null;
+        let fitAddon = null;
+        let socket = null;
+
+        // 创建WebSocket连接
+        socket = new WebSocket(`ws://127.0.0.1:${port}/${event.node.sshId}`); // 假设WebSocket服务器在8080端口
+        terminal = new Terminal({
+          cursorBlink: true,
+          fontSize: 14,
+          fontFamily: 'Menlo, Monaco, "Courier New", monospace',
+        });
+
+        fitAddon = new FitAddon();
+        terminal.loadAddon(fitAddon);
+
+        terminal.open(terminalRefs.value[`terminalContainer${event.node.key}`]);
+        fitAddon.fit();
+
+        window.onresize = function () {
+          fitAddon.fit();
+        };
+
+        // 监听键盘输入
+        let attachAddon = new AttachAddon(socket);
+        terminal.loadAddon(attachAddon);
+      });
+    });
+  }
+};
 
 const setTerminalRef = (el, id) => {
   if (el) {
@@ -149,13 +197,14 @@ const addIconToProps = (node) => {
   }
 };
 
+
+// 右键菜单
 const showContextMenu = ref(false);
 const menuX = ref(0);
 const menuY = ref(0);
 const selectedNode = ref(null);
 const selectedKeys = ref([]);
-
-const onContextMenu = (event) => {
+const onContextMenu = (event: any) => {
   const {__vueParentComponent: parent} = event.target;
   console.log(parent.attrs);
   selectedKeys.value = []
@@ -169,7 +218,7 @@ const onContextMenu = (event) => {
   menuX.value = event.clientX;
   menuY.value = event.clientY;
 };
-const onMenuItemClick = (action) => {
+const onMenuItemClick = (action: any) => {
   if (selectedNode.value) {
     console.log(`Performing ${action} on node:`, selectedNode.value);
     // 在这里实现相应的操作逻辑
@@ -188,60 +237,13 @@ onMounted(() => {
 })
 
 let count = 5;
-const data = ref([]);
+const data: any = ref([]);
 
-
-const handleAdd = () => {
-  const number = count++;
-  data.value = data.value.concat({
-    key: `${number}`,
-    title: `New Tab ${number}`,
-    content: `Content of New Tab Panel ${number}`
-  })
-};
-const handleDelete = (key) => {
-  data.value = data.value.filter(item => item.id !== key)
+const handleDelete = (key: any) => {
+  data.value = data.value.filter(item => item.key !== key)
 };
 
 const treeData = ref([]);
-const handleSelect = (keys: any, event: any) => {
-  selectedNode.value = event.selectedNodes[0];
-  getElectronApi().enableWs(event.node.key);
-  data.value.push({
-    id: event.node.key,
-    title: event.node.title,
-    ip: event.node.title
-  });
-
-  nextTick(() => {
-    let terminal = null;
-    let currentLine = '';
-    let fitAddon = null;
-    let socket = null;
-
-    // 创建WebSocket连接
-    socket = new WebSocket(`ws://127.0.0.1:48821/${event.node.key}`); // 假设WebSocket服务器在8080端口
-    terminal = new Terminal({
-      cursorBlink: true,
-      fontSize: 14,
-      fontFamily: 'Menlo, Monaco, "Courier New", monospace',
-    });
-
-    fitAddon = new FitAddon();
-    terminal.loadAddon(fitAddon);
-
-    terminal.open(terminalRefs.value[`terminalContainer${event.node.key}`]);
-    fitAddon.fit();
-
-    window.onresize = function () {
-      fitAddon.fit();
-    };
-
-    // 监听键盘输入
-    let attachAddon = new AttachAddon(socket);
-    terminal.loadAddon(attachAddon);
-  });
-};
 // 定义响应式数据
 const size = ref(0.25);
 
