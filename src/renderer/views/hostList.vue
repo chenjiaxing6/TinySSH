@@ -45,14 +45,8 @@
     <!--终端-->
     <template #second>
       <div class="tab-container">
-        <a-tabs
-            type="card"
-            :editable="true"
-            @delete="handleDelete"
-            style="height: 100%"
-            v-model:activeKey="activeTabKey"
-        >
-          <a-tab-pane v-for="(item, index) of data" :key="item.key" :title="item.title" style="height: 100%">
+        <a-tabs type="card" :editable="true" @add="handleAdd" @delete="handleDelete" style="height: 100%">
+          <a-tab-pane v-for="(item, index) of data" :key="item.id" :title="item.id" style="height: 100%">
             <div class="terminal-wrapper">
               <div :ref="el => setTerminalRef(el, item.id)" class="terminal-container"></div>
             </div>
@@ -104,7 +98,6 @@ function getElectronApi() {
   return window.primaryWindowAPI;
 }
 
-const activeTabKey = ref('');
 // 点击树节点
 const handleSelect = (keys: any, event: any) => {
   selectedNode.value = event.node;
@@ -112,14 +105,14 @@ const handleSelect = (keys: any, event: any) => {
     // 生成一个随机ID
     const randomId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
     getElectronApi().getPort(randomId).then((port: any) => {
-      getElectronApi().enableWs(randomId, event.node.sshId);
+      console.log(port);
+
+      getElectronApi().enableWs(randomId,event.node.sshId);
       data.value.push({
-        key:randomId,
         id: event.node.key,
         title: event.node.title,
         ip: event.node.title
       });
-      activeTabKey.value = randomId;
 
       nextTick(() => {
 
@@ -239,8 +232,17 @@ onMounted(() => {
 let count = 5;
 const data: any = ref([]);
 
+
+const handleAdd = () => {
+  const number = count++;
+  data.value = data.value.concat({
+    key: `${number}`,
+    title: `New Tab ${number}`,
+    content: `Content of New Tab Panel ${number}`
+  })
+};
 const handleDelete = (key: any) => {
-  data.value = data.value.filter(item => item.key !== key)
+  data.value = data.value.filter(item => item.id !== key)
 };
 
 const treeData = ref([]);
