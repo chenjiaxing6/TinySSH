@@ -9,7 +9,7 @@ const SSH2Client = require('ssh2').Client;
 import {registerFolderHandlers} from "../../handle/folderHandler";
 import { initializeDatabase } from '../../database/connection';
 import * as sshOps from '../../database/sshOption';
-import SSHHandler from "../../handle/sshHandleser";
+import SSHHandler from "../../handle/sshHandler";
 
 
 

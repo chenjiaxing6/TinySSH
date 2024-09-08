@@ -45,7 +45,7 @@
       </div>
     </template>
 
-    <!--终端-->
+    <!--终���-->
     <template #second>
       <div class="tab-container">
         <a-tabs type="card" :editable="true" @delete="handleDelete" :active-key="activeTabKey" style="height: 100%">
@@ -348,7 +348,41 @@ function openCreateHost() {
 }
 
 function handleHostOk() {
-  // 这里添加创建主机的逻辑
+  if (!hostForm.name.trim() || !hostForm.ip.trim() || !hostForm.username.trim() || !hostForm.password.trim()) {
+    Modal.warning({
+      title: '提示',
+      content: h('div', { style: 'text-align: center;' }, ['请填写所有必填字段']),
+    });
+    return;
+  }
+  
+  hostForm.parentFolder = hostForm.parentFolder.replace('-folder', '');
+  
+  getElectronApi().createSsh({
+    parentFolder: hostForm.parentFolder,
+    name: hostForm.name,
+    ip: hostForm.ip,
+    port: hostForm.port,
+    username: hostForm.username,
+    password: hostForm.password
+  }).then(() => {
+    createHostVisible.value = false;
+    getTreeData();
+    Message.success('SSH主机添加成功');
+    resetHostForm();
+  }).catch((error: Error) => {
+    console.error('添加SSH主机失败:', error);
+    Message.error('添加SSH主机失败，请重试');
+  });
+}
+
+function resetHostForm() {
+  hostForm.parentFolder = '';
+  hostForm.name = '';
+  hostForm.ip = '';
+  hostForm.port = 22;
+  hostForm.username = '';
+  hostForm.password = '';
 }
 
 function handleHostCancel() {

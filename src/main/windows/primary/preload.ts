@@ -29,4 +29,7 @@ contextBridge.exposeInMainWorld("primaryWindowAPI", {
     getPort: (key:string) => ipcRenderer.invoke("get-port",key),
 
     deleteFolder: (folderId: number) => ipcRenderer.invoke("delete-folder", folderId),
+
+    createSsh: (sshData: { parentFolder: string; name: string; ip: string; port: number; username: string; password: string }) => 
+        ipcRenderer.invoke("create-ssh", sshData),
 });

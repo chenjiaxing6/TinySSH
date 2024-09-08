@@ -28,3 +28,25 @@ export async function getSshInfoById(id: any): Promise<any> {
         }
     });
 }
+
+export async function createSsh(sshData: any): Promise<void> {
+    const db = getDatabase();
+    return new Promise((resolve, reject) => {
+        try {
+            db.prepare(`
+                INSERT INTO t_ssh (folderId, sshName, ip, port, userName, password)
+                VALUES (?, ?, ?, ?, ?, ?)
+            `).run(
+                sshData.parentFolder,
+                sshData.name,
+                sshData.ip,
+                sshData.port,
+                sshData.username,
+                sshData.password
+            );
+            resolve();
+        } catch (error) {
+            reject(error);
+        }
+    });
+}

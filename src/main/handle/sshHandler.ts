@@ -16,6 +16,7 @@ class SSHHandler {
     registerHandlers() {
         ipcMain.on("enable-ws", (event, key, sshId) => this.handleEnableWs(event, key, sshId));
         ipcMain.handle("get-port", (event, key) => this.getAvailablePort(key));
+        ipcMain.handle("create-ssh", (event, sshData) => this.handleCreateSsh(event, sshData));
     }
 
     private async handleEnableWs(event: Electron.IpcMainEvent, key: string, sshId: string) {
@@ -119,6 +120,17 @@ class SSHHandler {
     private getPortByKey(key: string): number | undefined {
         return this.ports.get(key);
     }
+
+    private async handleCreateSsh(event: Electron.IpcMainInvokeEvent, sshData: any) {
+        try {
+          await sshOps.createSsh(sshData);
+          return { success: true };
+        } catch (error) {
+          console.error('创建SSH失败:', error);
+          throw error;
+        }
+      }
+    
 }
 
 export default SSHHandler;
