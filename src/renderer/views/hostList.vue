@@ -179,6 +179,7 @@ function getElectronApi() {
 
 function handleSelect(keys: any, event: any) {
   selectedNode.value = event.node;
+  selectedKeys.value = keys;
   if (event.node.type === 'ssh') {
     const randomId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
     getElectronApi().getPort(randomId).then((port: any) => {
