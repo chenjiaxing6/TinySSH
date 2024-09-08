@@ -124,7 +124,7 @@ import {
   IconImport,
   IconExport
 } from '@arco-design/web-vue/es/icon';
-import {IconFolder, IconComputer} from '@arco-design/web-vue/es/icon';
+import {IconFolder, IconComputer, IconSettings} from '@arco-design/web-vue/es/icon';
 import {Terminal} from "xterm"
 import {FitAddon} from 'xterm-addon-fit'
 import "xterm/css/xterm.css"

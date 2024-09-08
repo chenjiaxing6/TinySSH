@@ -25,7 +25,7 @@
         </router-link>
       </a-menu>
       <div style="padding: 6px">
-        <a-button shape="circle">
+        <a-button shape="circle" @click="openSettings">
           <icon-settings/>
         </a-button>
       </div>
@@ -41,6 +41,8 @@
         <component :is="Component" />
       </keep-alive>
     </router-view>
+
+    <Settings ref="settingsRef" />
   </div>
 </template>
 <script setup>
@@ -55,6 +57,8 @@ import {
   IconImport,
   IconExport
 } from '@arco-design/web-vue/es/icon';
+import Settings from '../components/Settings.vue';
+import {ref} from "vue";
 function getElectronApi() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return window.primaryWindowAPI;
@@ -67,6 +71,13 @@ getElectronApi().onShowClosePrimaryWinMsgbox(() => {
 getElectronApi().onShowExitAppMsgbox(() => {
   getElectronApi().asyncExitApp();
 });
+
+const settingsRef = ref(null);
+
+function openSettings() {
+  settingsRef.value.show();
+}
+
 function onOpenDevTools() {
   utils.openDevTools();
 }
