@@ -5,8 +5,8 @@ export function getSshInfo(): any {
     const sshQuery = `SELECT f.id AS folderId, s.id AS sshId, s.sshName, s.ip, s.port, s.userName
                       FROM t_folder f
                                LEFT JOIN t_ssh s ON f.id = s.folderId
-                      WHERE f.isDelete != 'true'
-                        AND (s.isDelete != 'true' OR s.isDelete IS NULL);`;
+                      WHERE f.isDelete != '1'
+                        AND (s.isDelete != '1' OR s.isDelete IS NULL);`;
 
     return db.prepare(sshQuery).all();
 }
@@ -34,15 +34,56 @@ export async function createSsh(sshData: any): Promise<void> {
     return new Promise((resolve, reject) => {
         try {
             db.prepare(`
-                INSERT INTO t_ssh (folderId, sshName, ip, port, userName, password)
-                VALUES (?, ?, ?, ?, ?, ?)
+                INSERT INTO t_ssh (folderId, sshName, ip, port, userName, password,isDelete)
+                VALUES (?, ?, ?, ?, ?, ?,?)
+            `).run(
+                sshData.parentFolder,
+                sshData.name,
+                sshData.ip,
+                sshData.port.toString(),
+                sshData.username,
+                sshData.password,
+                '0',
+            );
+            resolve();
+        } catch (error) {
+            reject(error);
+        }
+    });
+}
+
+export async function deleteSsh(sshId: number): Promise<void> {
+    const db = getDatabase();
+    return new Promise((resolve, reject) => {
+        try {
+            db.prepare(`
+                UPDATE t_ssh
+                SET isDelete = '1'
+                WHERE id = ?
+            `).run(sshId);
+            resolve();
+        } catch (error) {
+            reject(error);
+        }
+    });
+}
+
+export async function updateSsh(sshData: any): Promise<void> {
+    const db = getDatabase();
+    return new Promise((resolve, reject) => {
+        try {
+            db.prepare(`
+                UPDATE t_ssh
+                SET folderId = ?, sshName = ?, ip = ?, port = ?, userName = ?, password = ?
+                WHERE id = ?
             `).run(
                 sshData.parentFolder,
                 sshData.name,
                 sshData.ip,
                 sshData.port,
                 sshData.username,
-                sshData.password
+                sshData.password,
+                sshData.id
             );
             resolve();
         } catch (error) {

@@ -80,3 +80,17 @@ export function deleteFolder(folderId: number): void {
         deleteRelatedSSH.run(folderId);
     })();
 }
+
+export function updateFolder(folder: any): void {
+    if (!folder.parentFolder) {
+        folder.parentFolder = null;
+    }
+    const db = getDatabase();
+    const now = getCurrentDateTime();
+    const stmt = db.prepare(`
+        UPDATE t_folder
+        SET folderName = ?, parentId = ?, updateTime = ?
+        WHERE id = ?
+    `);
+    stmt.run(folder.folderName, folder.parentFolder, now, folder.id);
+}

@@ -17,6 +17,25 @@ class SSHHandler {
         ipcMain.on("enable-ws", (event, key, sshId) => this.handleEnableWs(event, key, sshId));
         ipcMain.handle("get-port", (event, key) => this.getAvailablePort(key));
         ipcMain.handle("create-ssh", (event, sshData) => this.handleCreateSsh(event, sshData));
+        ipcMain.handle("delete-ssh", async (event, sshId) => {
+          try {
+            await sshOps.deleteSsh(sshId);
+            return { success: true };
+          } catch (error) {
+            console.error('删除SSH失败:', error);
+            throw error;
+          }
+        });
+
+        ipcMain.handle("update-ssh", async (event, sshData) => {
+          try {
+            await sshOps.updateSsh(sshData);
+            return { success: true };
+          } catch (error) {
+            console.error('更新SSH失败:', error);
+            throw error;
+          }
+        });
     }
 
     private async handleEnableWs(event: Electron.IpcMainEvent, key: string, sshId: string) {

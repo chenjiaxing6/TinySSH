@@ -4,7 +4,6 @@ import * as sshOps from '../database/sshOption';
 
 export function registerFolderHandlers() {
     ipcMain.handle("create-folder", async (event, folderData) => {
-        console.log(folderData)
         try {
             await folderOps.createFolder(folderData);
             return { success: true };
@@ -63,6 +62,16 @@ export function registerFolderHandlers() {
             return { success: true };
         } catch (error: any) {
             console.error('删除文件夹失败:', error);
+            return { success: false, error: error.message };
+        }
+    });
+
+    ipcMain.handle("update-folder", async (event, folderData) => {
+        try {
+            await folderOps.updateFolder(folderData);
+            return { success: true };
+        } catch (error:any) {
+            console.error('更新文件夹失败:', error);
             return { success: false, error: error.message };
         }
     });

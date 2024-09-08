@@ -18,7 +18,7 @@
                  :style="{ position: 'fixed', top: `${menuY}px`, left: `${menuX}px` }"
                  class="context-menu">
               <a-menu>
-                <a-menu-item @click="onMenuItemClick('add')">添加</a-menu-item>
+                <a-menu-item @click="onMenuItemClick('add')">添加文件夹</a-menu-item>
                 <a-menu-item @click="onMenuItemClick('edit')">编辑</a-menu-item>
                 <a-menu-item @click="onMenuItemClick('delete')">删除</a-menu-item>
               </a-menu>
@@ -153,6 +153,10 @@ const hostForm = reactive({
   password: '',
 });
 
+// 添加新的响应式变量
+const isEditing = ref(false);
+const editingItemId = ref(null);
+
 // 计算属性
 const filteredTreeData = computed(() => {
   return searchKeyword.value ? filterTree(treeData.value, searchKeyword.value.toLowerCase()) : treeData.value;
@@ -236,14 +240,38 @@ function onMenuItemClick(action: any) {
   if (selectedNode.value) {
     switch (action) {
       case 'add':
+        if (selectedNode.value.type === 'ssh') {
+          Message.error('请选择文件夹');
+          return;
+        }
         folderForm.parentFolder = selectedNode.value.id+"-folder";
         openCreateFolder();
         break;
       case 'edit':
-        openCreateHost();
+        isEditing.value = true;
+        if (selectedNode.value.type === 'folder') {
+          editingItemId.value = selectedNode.value.id;
+          folderForm.folderName = selectedNode.value.folderName
+          folderForm.parentFolder = selectedNode.value.parentId ? selectedNode.value.parentId + "-folder" : '';
+          openCreateFolder();
+        } else {
+          editingItemId.value = selectedNode.value.sshId;
+          hostForm.name = selectedNode.value.sshName;
+          hostForm.ip = selectedNode.value.ip;
+          // 转为num
+          hostForm.port = Number(selectedNode.value.port);
+          hostForm.username = selectedNode.value.userName;
+          hostForm.password = ''; // 出于安全考虑,不回显密码
+          hostForm.parentFolder = selectedNode.value.folderId + "-folder";
+          openCreateHost();
+        }
         break;
       case 'delete':
-        deleteFolderAndHost(selectedNode.value);
+        if (selectedNode.value.type === 'folder') {
+          deleteFolderAndHost(selectedNode.value);
+        } else {
+          deleteSsh(selectedNode.value.sshId);
+        }
         break;
     }
   }
@@ -264,6 +292,8 @@ function openCreateFolder() {
 function resetFolderForm() {
   folderForm.parentFolder = '';
   folderForm.folderName = '';
+  isEditing.value = false;
+  editingItemId.value = null;
 }
 
 function handleFolderOk() {
@@ -272,18 +302,36 @@ function handleFolderOk() {
     Message.error('请输入文件夹名称');
     return;
   }
-  getElectronApi().createFolder({
-    parentFolder: folderForm.parentFolder,
-    folderName: folderForm.folderName
-  }).then(() => {
-    createFolderVisible.value = false;
-    getTreeData();
-    Message.success('文件夹创建成功');
-    resetFolderForm();
-  }).catch((error: Error) => {
-    console.error('创建文件夹失败:', error);
-    Message.error('创建文件夹失败，请重试');
-  });
+  if (isEditing.value) {
+    getElectronApi().updateFolder({
+      id: editingItemId.value,
+      parentFolder: folderForm.parentFolder,
+      folderName: folderForm.folderName
+    }).then(() => {
+      createFolderVisible.value = false;
+      getTreeData();
+      Message.success('文件夹更新成功');
+      resetFolderForm();
+      isEditing.value = false;
+      editingItemId.value = null;
+    }).catch((error: Error) => {
+      console.error('更新文件夹失败:', error);
+      Message.error('更新文件夹失败，请重试');
+    });
+  } else {
+    getElectronApi().createFolder({
+      parentFolder: folderForm.parentFolder,
+      folderName: folderForm.folderName
+    }).then(() => {
+      createFolderVisible.value = false;
+      getTreeData();
+      Message.success('文件夹创建成功');
+      resetFolderForm();
+    }).catch((error: Error) => {
+      console.error('创建文件夹失败:', error);
+      Message.error('创建文件夹失败，请重试');
+    });
+  }
 }
 
 function handleFolderCancel() {
@@ -342,11 +390,14 @@ function addIconToProps(node) {
 }
 
 function openCreateHost() {
+  if (!isEditing.value) {
+    resetHostForm();
+  }
   createHostVisible.value = true;
 }
 
 function handleHostOk() {
-  if (!hostForm.name.trim() || !hostForm.ip.trim() || !hostForm.username.trim() || !hostForm.password.trim()) {
+  if (!hostForm.name.trim() || !hostForm.ip.trim() || !hostForm.username.trim() || (!isEditing.value && !hostForm.password.trim())) {
     Message.error('请填写所有必填字段');
     return;
   }
@@ -366,22 +417,44 @@ function handleHostOk() {
   
   hostForm.parentFolder = hostForm.parentFolder.replace('-folder', '');
   
-  getElectronApi().createSsh({
-    parentFolder: hostForm.parentFolder,
-    name: hostForm.name,
-    ip: hostForm.ip,
-    port: hostForm.port,
-    username: hostForm.username,
-    password: hostForm.password
-  }).then(() => {
-    createHostVisible.value = false;
-    getTreeData();
-    Message.success('SSH主机添加成功');
-    resetHostForm();
-  }).catch((error: Error) => {
-    console.error('添加SSH主机失败:', error);
-    Message.error('添加SSH主机失败，请重试');
-  });
+  if (isEditing.value) {
+    getElectronApi().updateSsh({
+      id: editingItemId.value,
+      parentFolder: hostForm.parentFolder,
+      name: hostForm.name,
+      ip: hostForm.ip,
+      port: hostForm.port,
+      username: hostForm.username,
+      password: hostForm.password
+    }).then(() => {
+      createHostVisible.value = false;
+      getTreeData();
+      Message.success('SSH主机更新成功');
+      resetHostForm();
+      isEditing.value = false;
+      editingItemId.value = null;
+    }).catch((error: Error) => {
+      console.error('更新SSH主机失败:', error);
+      Message.error('更新SSH主机失败，请重试');
+    });
+  } else {
+    getElectronApi().createSsh({
+      parentFolder: hostForm.parentFolder,
+      name: hostForm.name,
+      ip: hostForm.ip,
+      port: hostForm.port,
+      username: hostForm.username,
+      password: hostForm.password
+    }).then(() => {
+      createHostVisible.value = false;
+      getTreeData();
+      Message.success('SSH主机添加成功');
+      resetHostForm();
+    }).catch((error: Error) => {
+      console.error('添加SSH主机失败:', error);
+      Message.error('添加SSH主机失败，请重试');
+    });
+  }
 }
 
 function resetHostForm() {
@@ -391,10 +464,13 @@ function resetHostForm() {
   hostForm.port = 22;
   hostForm.username = '';
   hostForm.password = '';
+  isEditing.value = false;
+  editingItemId.value = null;
 }
 
 function handleHostCancel() {
   createHostVisible.value = false;
+  isEditing.value = false;
 }
 
 function deleteFolderAndHost(node: any) {
@@ -417,6 +493,25 @@ function deleteFolderAndHost(node: any) {
   } else if(node.type === 'ssh') {
     // 处理SSH节点的删除逻辑
   }
+}
+
+// 添加 deleteSsh 函数
+function deleteSsh(sshId: number) {
+  Modal.confirm({
+    title: '确认删除',
+    content: '确定删除该SSH主机吗？',
+    okText: '确定',
+    cancelText: '取消',
+    onOk: () => {
+      getElectronApi().deleteSsh(sshId).then(() => {
+        getTreeData();
+        Message.success('删除SSH主机成功');
+      }).catch((error: Error) => {
+        console.error('删除SSH主机失败:', error);
+        Message.error('删除SSH主机失败，请重试');
+      });
+    },
+  });
 }
 
 // 生命周期钩子
