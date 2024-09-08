@@ -45,7 +45,7 @@
       </div>
     </template>
 
-    <!--终���-->
+    <!--终-->
     <template #second>
       <div class="tab-container">
         <a-tabs type="card" :editable="true" @delete="handleDelete" :active-key="activeTabKey" style="height: 100%">
@@ -269,10 +269,7 @@ function resetFolderForm() {
 function handleFolderOk() {
   folderForm.parentFolder = folderForm.parentFolder.replace('-folder', '');
   if (!folderForm.folderName.trim()) {
-    Modal.warning({
-      title: '提示',
-      content: h('div', { style: 'text-align: center;' }, ['请输入文件夹名称']),
-    });
+    Message.error('请输入文件夹名称');
     return;
   }
   getElectronApi().createFolder({
@@ -285,6 +282,7 @@ function handleFolderOk() {
     resetFolderForm();
   }).catch((error: Error) => {
     console.error('创建文件夹失败:', error);
+    Message.error('创建文件夹失败，请重试');
   });
 }
 
@@ -349,10 +347,20 @@ function openCreateHost() {
 
 function handleHostOk() {
   if (!hostForm.name.trim() || !hostForm.ip.trim() || !hostForm.username.trim() || !hostForm.password.trim()) {
-    Modal.warning({
-      title: '提示',
-      content: h('div', { style: 'text-align: center;' }, ['请填写所有必填字段']),
-    });
+    Message.error('请填写所有必填字段');
+    return;
+  }
+  
+  // IP地址验证
+  const ipRegex = /^(\d{1,3}\.){3}\d{1,3}$/;
+  if (!ipRegex.test(hostForm.ip)) {
+    Message.error('请输入有效的IP地址');
+    return;
+  }
+  
+  // 端口验证
+  if (hostForm.port < 1 || hostForm.port > 65535) {
+    Message.error('请输入有效的端口号(1-65535)');
     return;
   }
   
