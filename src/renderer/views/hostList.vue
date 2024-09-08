@@ -48,7 +48,7 @@
     <!--终-->
     <template #second>
       <div class="tab-container">
-        <a-tabs type="card" :editable="true" @delete="handleDelete" :active-key="activeTabKey" style="height: 100%">
+        <a-tabs type="card" :editable="true" @delete="handleDelete" :active-key="activeTabKey" @change="handleTabChange" style="height: 100%">
           <a-tab-pane v-for="(item, index) of data" :key="item.randomId" :title="item.title" style="height: 100%">
             <div class="terminal-wrapper">
               <div :ref="el => setTerminalRef(el, item.id)" class="terminal-container"></div>
@@ -136,7 +136,7 @@ const searchKeyword = ref('');
 const treeData = ref([]);
 let count = 5;
 const data: any = ref([]);
-const activeTabKey = ref(null);
+const activeTabKey = ref<string | null>(null);
 
 // 表单数据
 const folderForm = reactive({
@@ -368,6 +368,11 @@ function handleSearch() {
 // tab相关
 function handleDelete(key: any) {
   data.value = data.value.filter(item => item.randomId !== key)
+}
+
+// 添加一个新的方法来处理标签页切换
+function handleTabChange(key: string) {
+  activeTabKey.value = key;
 }
 
 // 列表相关
