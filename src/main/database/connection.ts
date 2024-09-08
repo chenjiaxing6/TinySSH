@@ -12,18 +12,36 @@ export function initializeDatabase(): void {
 }
 
 function createTables(): void {
-    const createUserTableSQL = `
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT,
-            email TEXT UNIQUE,
-            city TEXT,
-            province TEXT
-        )
-    `;
-    db.exec(createUserTableSQL);
+    // 创建 t_ssh 表
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS "t_ssh" (
+        "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+        "sshName" TEXT,
+        "password" TEXT,
+        "ip" TEXT,
+        "port" TEXT,
+        "userName" TEXT,
+        "conneType" TEXT,
+        "certificate" TEXT,
+        "createTime" DATE,
+        "updateTime" DATE,
+        "isDelete" TEXT,
+        "folderId" INTEGER
+      )
+    `);
 
-    // 在这里添加其他表的创建语句
+    // 创建 t_folder 表
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS "t_folder" (
+        "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+        "folderName" TEXT,
+        "parentId" INTEGER,
+        "createTime" DATE,
+        "updateTime" DATE,
+        "isDelete" TEXT,
+        "folderType" TEXT
+      )
+    `);
 }
 
 export function getDatabase(): Database.Database {
