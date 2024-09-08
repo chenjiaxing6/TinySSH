@@ -18,15 +18,15 @@ export function getFolderInfo(): any {
     const db = getDatabase();
     const folderQuery = `WITH RECURSIVE folder_tree AS (SELECT id, folderName, parentId, 0 AS level
                                                         FROM t_folder
-                                                        WHERE parentId IS NULL
-                                                          AND isDelete != 'true'
+                                                        WHERE (parentId IS NULL)
+                                                          AND isDelete != '1'
 
                                                         UNION ALL
 
                                                         SELECT f.id, f.folderName, f.parentId, ft.level + 1
                                                         FROM t_folder f
                                                                  JOIN folder_tree ft ON f.parentId = ft.id
-                                                        WHERE f.isDelete != 'true')
+                                                        WHERE f.isDelete != '1')
                          SELECT id, folderName, parentId, level
                          FROM folder_tree
                          ORDER BY level, id;`;
@@ -38,69 +38,45 @@ export function getFolderInfo(): any {
 export function createFolder(folder: any): number {
     const db = getDatabase();
     const now = getCurrentDateTime();
+    if (!folder.parentFolder) {
+        folder.parentFolder = null;
+    }
     const stmt = db.prepare(`
-        INSERT INTO t_folder (folderName, parentId, create_time, update_time, is_delete, folder_type)
+        INSERT INTO t_folder (folderName, parentId, createTime, updateTime, isDelete, folderType)
         VALUES (?, ?, ?, ?, ?, ?)
     `);
-    const info = stmt.run(folder.folderName, folder.parentId, now, now, '1', '1');
+    const info = stmt.run(folder.folderName, folder.parentFolder, now, now, '0', '1');
     return info.lastInsertRowid as number;
 }
 
-// 获取所有文件夹
-export function getAllFolders(): Folder[] {
+export function deleteFolder(folderId: number): void {
     const db = getDatabase();
-    const stmt = db.prepare('SELECT * FROM t_folder');
-    return stmt.all();
-}
+    
+    db.transaction(() => {
+        // 递归删除子文件夹
+        const deleteSubFolders = db.prepare(`
+            WITH RECURSIVE subfolder(id) AS (
+                SELECT id FROM t_folder WHERE id = ?
+                UNION ALL
+                SELECT f.id FROM t_folder f, subfolder s WHERE f.parentId = s.id
+            )
+            UPDATE t_folder SET isDelete = '1' WHERE id IN subfolder;
+        `);
+        
+        // 删除关联的SSH连接
+        const deleteRelatedSSH = db.prepare(`
+            UPDATE t_ssh SET isDelete = '1' 
+            WHERE folderId IN (
+                WITH RECURSIVE subfolder(id) AS (
+                    SELECT id FROM t_folder WHERE id = ?
+                    UNION ALL
+                    SELECT f.id FROM t_folder f, subfolder s WHERE f.parentId = s.id
+                )
+                SELECT id FROM subfolder
+            );
+        `);
 
-// 根据 ID 获取文件夹
-export function getFolderById(id: number): Folder | undefined {
-    const db = getDatabase();
-    const stmt = db.prepare('SELECT * FROM t_folder WHERE id = ?');
-    return stmt.get(id);
-}
-
-// 更新文件夹
-export function updateFolder(folder: Folder): number {
-    const db = getDatabase();
-    const now = getCurrentDateTime();
-    const stmt = db.prepare(`
-        UPDATE t_folder
-        SET folderName  = ?,
-            parentId    = ?,
-            update_time = ?,
-            is_delete   = ?,
-            folder_type = ?
-        WHERE id = ?
-    `);
-    const info = stmt.run(folder.folderName, folder.parentId, now, folder.is_delete, folder.folder_type, folder.id);
-    return info.changes;
-}
-
-// 删除文件夹（软删除）
-export function deleteFolder(id: number): number {
-    const db = getDatabase();
-    const now = getCurrentDateTime();
-    const stmt = db.prepare(`
-        UPDATE t_folder
-        SET is_delete   = 'Y',
-            update_time = ?
-        WHERE id = ?
-    `);
-    const info = stmt.run(now, id);
-    return info.changes;
-}
-
-// 获取子文件夹
-export function getChildFolders(parentId: number): Folder[] {
-    const db = getDatabase();
-    const stmt = db.prepare('SELECT * FROM t_folder WHERE parentId = ?');
-    return stmt.all(parentId);
-}
-
-// 根据文件夹类型获取文件夹
-export function getFoldersByType(folderType: string): Folder[] {
-    const db = getDatabase();
-    const stmt = db.prepare('SELECT * FROM t_folder WHERE folder_type = ?');
-    return stmt.all(folderType);
+        deleteSubFolders.run(folderId);
+        deleteRelatedSSH.run(folderId);
+    })();
 }

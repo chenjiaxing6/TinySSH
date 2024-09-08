@@ -48,8 +48,8 @@
     <!--终端-->
     <template #second>
       <div class="tab-container">
-        <a-tabs type="card" :editable="true" @add="handleAdd" @delete="handleDelete" style="height: 100%">
-          <a-tab-pane v-for="(item, index) of data" :key="item.id" :title="item.id" style="height: 100%">
+        <a-tabs type="card" :editable="true" @delete="handleDelete" style="height: 100%">
+          <a-tab-pane v-for="(item, index) of data" :key="item.id" :title="item.title" style="height: 100%">
             <div class="terminal-wrapper">
               <div :ref="el => setTerminalRef(el, item.id)" class="terminal-container"></div>
             </div>
@@ -115,34 +115,67 @@
 </template>
 <script setup lang="ts">
 import {reactive, ref, h, onMounted, nextTick, computed} from 'vue';
-import {
-  IconMenuFold,
-  IconMenuUnfold,
-  IconApps,
-  IconPlus,
-  IconStorage,
-  IconImport,
-  IconExport
-} from '@arco-design/web-vue/es/icon';
 import {IconFolder, IconComputer, IconSettings} from '@arco-design/web-vue/es/icon';
 import {Terminal} from "xterm"
 import {FitAddon} from 'xterm-addon-fit'
 import "xterm/css/xterm.css"
 import {AttachAddon} from "xterm-addon-attach";
+import { Message, Modal, Popconfirm } from '@arco-design/web-vue';
 
+// 定义响应式数据
+const size = ref(0.25);
 const terminalContainer = ref(null);
-const terminalRefs: any = ref({})
+const terminalRefs: any = ref({});
+const createFolderVisible = ref(false);
+const createHostVisible = ref(false);
+const showContextMenu = ref(false);
+const menuX = ref(0);
+const menuY = ref(0);
+const selectedNode = ref(null);
+const selectedKeys = ref([]);
+const searchKeyword = ref('');
+const treeData = ref([]);
+let count = 5;
+const data: any = ref([]);
 
+// 表单数据
+const folderForm = reactive({
+  parentFolder: '',
+  folderName: '',
+});
+
+const hostForm = reactive({
+  parentFolder: '',
+  name: '',
+  ip: '',
+  port: 22,
+  username: '',
+  password: '',
+});
+
+// 计算属性
+const filteredTreeData = computed(() => {
+  return searchKeyword.value ? filterTree(treeData.value, searchKeyword.value.toLowerCase()) : treeData.value;
+});
+
+const folderTreeData = computed(() => {
+  return treeData.value.filter(node => node.type === 'folder').map(folder => ({
+    key: folder.key,
+    title: folder.title,
+    icon:() => h(IconFolder),
+    children: folder.children ? folder.children.filter(child => child.type === 'folder') : []
+  }));
+});
+
+// 方法
 function getElectronApi() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return window.primaryWindowAPI;
 }
 
-// 点击树节点
-const handleSelect = (keys: any, event: any) => {
+function handleSelect(keys: any, event: any) {
   selectedNode.value = event.node;
   if (event.node.type === 'ssh') {
-    // 生成一个随机ID
     const randomId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
     getElectronApi().getPort(randomId).then((port: any) => {
       console.log(port);
@@ -155,13 +188,11 @@ const handleSelect = (keys: any, event: any) => {
       });
 
       nextTick(() => {
-
         let terminal = null;
         let fitAddon = null;
         let socket = null;
 
-        // 创建WebSocket连接
-        socket = new WebSocket(`ws://127.0.0.1:${port}/${event.node.sshId}`); // 假设WebSocket服务器在8080端口
+        socket = new WebSocket(`ws://127.0.0.1:${port}/${event.node.sshId}`);
         terminal = new Terminal({
           cursorBlink: true,
           fontSize: 14,
@@ -178,104 +209,91 @@ const handleSelect = (keys: any, event: any) => {
           fitAddon.fit();
         };
 
-        // 监听键盘输入
         let attachAddon = new AttachAddon(socket);
         terminal.loadAddon(attachAddon);
       });
     });
   }
-};
-
-const setTerminalRef = (el, id) => {
-  if (el) {
-    terminalRefs.value[`terminalContainer${id}`] = el
-  }
-}
-
-const createFolderVisible = ref(false);
-const folderForm = reactive({
-  parentFolder: '',
-  folderName: '',
-});
-
-function openCreateFolder() {
-  createFolderVisible.value = true;
-}
-
-function handleFolderOk() {
-  if (!folderForm.folderName.trim()) {
-    // 显示错误提示
-    return;
-  }
-  
-  getElectronApi().createFolder({
-    parentFolder: folderForm.parentFolder,
-    folderName: folderForm.folderName
-  }).then(() => {
-    createFolderVisible.value = false;
-    getTreeData(); // 刷新树形数据
-    // 重置表单
-    folderForm.parentFolder = '';
-    folderForm.folderName = '';
-  }).catch(error => {
-    console.error('创建文件夹失败:', error);
-    // 这里可以添加错误提示
-  });
-}
-
-function handleFolderCancel() {
-  createFolderVisible.value = false;
-  // 重置表单
-  folderForm.parentFolder = '';
-  folderForm.folderName = '';
 }
 
 // 右键菜单
-const showContextMenu = ref(false);
-const menuX = ref(0);
-const menuY = ref(0);
-const selectedNode = ref(null);
-const selectedKeys = ref([]);
-const onContextMenu = (event: any) => {
+function onContextMenu(event: any) {
   const {__vueParentComponent: parent} = event.target;
-  console.log(parent.attrs);
   selectedKeys.value = []
   if (parent.attrs.type === 'ssh') {
     selectedKeys.value.push(parent.attrs.sshId + '-' + parent.attrs.type);
   } else {
     selectedKeys.value.push(parent.attrs.id + '-' + parent.attrs.type);
   }
+  selectedNode.value = parent.attrs;
   event.preventDefault();
   showContextMenu.value = true;
   menuX.value = event.clientX;
   menuY.value = event.clientY;
-};
-const onMenuItemClick = (action: any) => {
+}
+
+function onMenuItemClick(action: any) {
   if (selectedNode.value) {
-    console.log(`Performing ${action} on node:`, selectedNode.value);
-    // 在这里实现相应的操作逻辑
+    switch (action) {
+      case 'add':
+        folderForm.parentFolder = selectedNode.value.id+"-folder";
+        openCreateFolder();
+        break;
+      case 'edit':
+        openCreateHost();
+        break;
+      case 'delete':
+        deleteFolderAndHost(selectedNode.value);
+        break;
+    }
   }
   showContextMenu.value = false;
-};
+}
 
-// 点击其他地方时隐藏右键菜单
-document.addEventListener('click', () => {
-  showContextMenu.value = false;
-});
+// 文件夹相关
+function setTerminalRef(el, id) {
+  if (el) {
+    terminalRefs.value[`terminalContainer${id}`] = el
+  }
+}
 
+function openCreateFolder() {
+  createFolderVisible.value = true;
+}
 
-onMounted(() => {
-  getTreeData()
-})
+function resetFolderForm() {
+  folderForm.parentFolder = '';
+  folderForm.folderName = '';
+}
 
-let count = 5;
-const data: any = ref([]);
+function handleFolderOk() {
+  folderForm.parentFolder = folderForm.parentFolder.replace('-folder', '');
+  if (!folderForm.folderName.trim()) {
+    Modal.warning({
+      title: '提示',
+      content: h('div', { style: 'text-align: center;' }, ['请输入文件夹名称']),
+    });
+    return;
+  }
+  getElectronApi().createFolder({
+    parentFolder: folderForm.parentFolder,
+    folderName: folderForm.folderName
+  }).then(() => {
+    createFolderVisible.value = false;
+    getTreeData();
+    Message.success('文件夹创建成功');
+    resetFolderForm();
+  }).catch((error: Error) => {
+    console.error('创建文件夹失败:', error);
+  });
+}
 
-const searchKeyword = ref('');
-const filteredTreeData = computed(() => {
-  return searchKeyword.value ? filterTree(treeData.value, searchKeyword.value.toLowerCase()) : treeData.value;
-});
+function handleFolderCancel() {
+  createFolderVisible.value = false;
+  resetFolderForm();
+}
 
+// 搜索过滤
 function filterTree(nodes, keyword) {
   if (!keyword) {
     return nodes;
@@ -295,75 +313,26 @@ function filterTree(nodes, keyword) {
 }
 
 function handleSearch() {
-  // 当搜索关键词为空时,重新获取树形数据
   if (!searchKeyword.value) {
     getTreeData();
   }
 }
 
-const handleAdd = () => {
-  const number = count++;
-  data.value = data.value.concat({
-    key: `${number}`,
-    title: `New Tab ${number}`,
-    content: `Content of New Tab Panel ${number}`
-  })
-};
-const handleDelete = (key: any) => {
+// tab相关
+function handleDelete(key: any) {
   data.value = data.value.filter(item => item.id !== key)
-};
-
-const treeData = ref([]);
-// 定义响应式数据
-const size = ref(0.25);
-
-const createHostVisible = ref(false);
-const hostForm = reactive({
-  parentFolder: '',
-  name: '',
-  ip: '',
-  port: 22,
-  username: '',
-  password: '',
-});
-
-const folderTreeData = computed(() => {
-  return treeData.value.filter(node => node.type === 'folder').map(folder => ({
-    key: folder.key,
-    title: folder.title,
-    children: folder.children ? folder.children.filter(child => child.type === 'folder') : []
-  }));
-});
-
-function openCreateHost() {
-  createHostVisible.value = true;
 }
 
-function handleHostOk() {
-  // 这里添加创建主机的逻辑
-  // getElectronApi().createHost(hostForm).then(() => {
-  //   createHostVisible.value = false;
-  //   getTreeData(); // 刷新树形数据
-  // }).catch(error => {
-  //   console.error('创建主机失败:', error);
-  //   // 这里可以添加错误提示
-  // });
-}
-
-function handleHostCancel() {
-  createHostVisible.value = false;
-}
-
+// 列表相关
 function getTreeData() {
   getElectronApi().getTreeInfo().then(res => {
-    //设置图标
     res.forEach(addIconToProps);
-    treeData.value = res;
+    console.log(res);
     treeData.value = res;
   })
 }
 
-const addIconToProps = (node) => {
+function addIconToProps(node) {
   if (node.type === 'folder') {
     node.icon = () => h(IconFolder);
   } else if (node.type === 'ssh') {
@@ -372,7 +341,51 @@ const addIconToProps = (node) => {
   if (node.children) {
     node.children.forEach(addIconToProps);
   }
-};
+}
+
+function openCreateHost() {
+  createHostVisible.value = true;
+}
+
+function handleHostOk() {
+  // 这里添加创建主机的逻辑
+}
+
+function handleHostCancel() {
+  createHostVisible.value = false;
+}
+
+function deleteFolderAndHost(node: any) {
+  if(node.type === 'folder') {
+    Modal.confirm({
+      title: '确认删除',
+      content: '确定删除该文件夹及其所有子节点吗？',
+      okText: '确定',
+      cancelText: '取消',
+      onOk: () => {
+        getElectronApi().deleteFolder(node.id).then(() => {
+          getTreeData();
+          Message.success('删除文件夹成功');
+        }).catch((error: Error) => {
+          console.error('删除文件夹失败:', error);
+          Message.error('删除文件夹失败，请重试');
+        });
+      },
+    });
+  } else if(node.type === 'ssh') {
+    // 处理SSH节点的删除逻辑
+  }
+}
+
+// 生命周期钩子
+onMounted(() => {
+  getTreeData()
+})
+
+// 事件监听器
+document.addEventListener('click', () => {
+  showContextMenu.value = false;
+});
 
 </script>
 

@@ -21,9 +21,12 @@ contextBridge.exposeInMainWorld("primaryWindowAPI", {
 
 
     // 文件夹相关
-    createFolder: (name: string) => ipcRenderer.send("create-folder", name),
+    createFolder: (folderData: { parentFolder: string; folderName: string }) => 
+        ipcRenderer.invoke("create-folder", folderData),
     getTreeInfo: () => ipcRenderer.invoke("get-tree-info"),
 
     // ssh 相关
-    getPort: (key:string) => ipcRenderer.invoke("get-port",key)
+    getPort: (key:string) => ipcRenderer.invoke("get-port",key),
+
+    deleteFolder: (folderId: number) => ipcRenderer.invoke("delete-folder", folderId),
 });
