@@ -48,8 +48,8 @@
     <!--终端-->
     <template #second>
       <div class="tab-container">
-        <a-tabs type="card" :editable="true" @delete="handleDelete" style="height: 100%">
-          <a-tab-pane v-for="(item, index) of data" :key="item.id" :title="item.title" style="height: 100%">
+        <a-tabs type="card" :editable="true" @delete="handleDelete" :active-key="activeTabKey" style="height: 100%">
+          <a-tab-pane v-for="(item, index) of data" :key="item.randomId" :title="item.title" style="height: 100%">
             <div class="terminal-wrapper">
               <div :ref="el => setTerminalRef(el, item.id)" class="terminal-container"></div>
             </div>
@@ -124,7 +124,6 @@ import { Message, Modal, Popconfirm } from '@arco-design/web-vue';
 
 // 定义响应式数据
 const size = ref(0.25);
-const terminalContainer = ref(null);
 const terminalRefs: any = ref({});
 const createFolderVisible = ref(false);
 const createHostVisible = ref(false);
@@ -137,6 +136,7 @@ const searchKeyword = ref('');
 const treeData = ref([]);
 let count = 5;
 const data: any = ref([]);
+const activeTabKey = ref(null);
 
 // 表单数据
 const folderForm = reactive({
@@ -178,14 +178,14 @@ function handleSelect(keys: any, event: any) {
   if (event.node.type === 'ssh') {
     const randomId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
     getElectronApi().getPort(randomId).then((port: any) => {
-      console.log(port);
-
       getElectronApi().enableWs(randomId,event.node.sshId);
       data.value.push({
+        randomId:randomId,
         id: event.node.key,
         title: event.node.title,
         ip: event.node.title
       });
+      activeTabKey.value = randomId
 
       nextTick(() => {
         let terminal = null;
@@ -320,7 +320,7 @@ function handleSearch() {
 
 // tab相关
 function handleDelete(key: any) {
-  data.value = data.value.filter(item => item.id !== key)
+  data.value = data.value.filter(item => item.randomId !== key)
 }
 
 // 列表相关
