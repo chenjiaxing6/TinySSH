@@ -82,7 +82,7 @@ class PrimaryWindow extends WindowBase{
 
       if(appState.tray){
         appState.tray.displayBalloon({
-          title: "electron-vue-boilerplate",
+          title: "TinySSH",
           content: "客户端已经最小化到系统托盘!"
         });
       }

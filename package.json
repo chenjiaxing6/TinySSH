@@ -1,7 +1,7 @@
 {
-  "name": "electron-vue3-boilerplate",
-  "version": "1.0.1",
-  "description": "A Electron + Vue3 boilerplate.",
+  "name": "TinySSH",
+  "version": "0.0.1",
+  "description": "",
   "author": {
     "name": "winsoft666",
     "url": "https://github.com/winsoft666"

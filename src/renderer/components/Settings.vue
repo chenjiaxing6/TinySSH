@@ -11,7 +11,7 @@
         <a-menu
           mode="vertical"
           :selected-keys="[activeKey]"
-          @select="handleSelect"
+          @menu-item-click="handleSelect"
           style="height: 100%"
         >
           <a-menu-item key="general">
