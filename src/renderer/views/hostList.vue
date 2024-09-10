@@ -178,8 +178,14 @@ function getElectronApi() {
 }
 
 function handleSelect(keys: any, event: any) {
-  selectedNode.value = event.node;
-  selectedKeys.value = keys;
+  if(selectedNode.value && selectedNode.value.key === event.node.key){
+    openSSH(event);
+  }else{
+    selectedNode.value = event.node;
+    selectedKeys.value = keys;
+  }
+}
+function openSSH(event: any){
   if (event.node.type === 'ssh') {
     const randomId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
     getElectronApi().getPort(randomId).then((port: any) => {
@@ -223,14 +229,10 @@ function handleSelect(keys: any, event: any) {
 
 // 右键菜单
 function onContextMenu(event: any) {
-  const {__vueParentComponent: parent} = event.target;
-  selectedKeys.value = []
-  if (parent.attrs.type === 'ssh') {
-    selectedKeys.value.push(parent.attrs.sshId + '-' + parent.attrs.type);
-  } else {
-    selectedKeys.value.push(parent.attrs.id + '-' + parent.attrs.type);
+  if(!selectedNode.value){
+    Message.warning('请选择一个节点');
+    return;
   }
-  selectedNode.value = parent.attrs;
   event.preventDefault();
   showContextMenu.value = true;
   menuX.value = event.clientX;
