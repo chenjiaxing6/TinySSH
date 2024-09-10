@@ -1,4 +1,4 @@
-import { BrowserWindow, app, dialog, session, Menu } from "electron";
+import { BrowserWindow, app, dialog, session, Menu,globalShortcut } from "electron";
 import log from "electron-log/main";
 import PrimaryWindow from "./windows/primary";
 import { CreateAppTray } from "./tray";
@@ -59,4 +59,69 @@ if(!gotLock && appState.onlyAllowSingleInstance){
   app.on("will-quit", () => {
     appState.uninitialize();
   });
+
+  // 快捷键
+  app.on('ready', () => {
+    // 剪切、复制、粘贴
+    globalShortcut.register('CommandOrControl+X', () => {
+      const win = BrowserWindow.getFocusedWindow()
+      if (win) win.webContents.cut()
+    })
+
+    globalShortcut.register('CommandOrControl+C', () => {
+      const win = BrowserWindow.getFocusedWindow()
+      if (win) win.webContents.copy()
+    })
+
+    globalShortcut.register('CommandOrControl+V', () => {
+      const win = BrowserWindow.getFocusedWindow()
+      if (win) win.webContents.paste()
+    })
+
+    // 撤销、重做
+    globalShortcut.register('CommandOrControl+Z', () => {
+      const win = BrowserWindow.getFocusedWindow()
+      if (win) win.webContents.undo()
+    })
+
+    globalShortcut.register('CommandOrControl+Shift+Z', () => {
+      const win = BrowserWindow.getFocusedWindow()
+      if (win) win.webContents.redo()
+    })
+
+    // 全选
+    globalShortcut.register('CommandOrControl+A', () => {
+      const win = BrowserWindow.getFocusedWindow()
+      if (win) win.webContents.selectAll()
+    })
+
+    // 刷新页面
+    globalShortcut.register('CommandOrControl+R', () => {
+      const win = BrowserWindow.getFocusedWindow()
+      if (win) win.reload()
+    })
+
+    // 强制刷新（清除缓存）
+    globalShortcut.register('CommandOrControl+Shift+R', () => {
+      const win = BrowserWindow.getFocusedWindow()
+      if (win) win.webContents.reloadIgnoringCache()
+    })
+
+    // 关闭窗口
+    globalShortcut.register('CommandOrControl+W', () => {
+      const win = BrowserWindow.getFocusedWindow()
+      if (win) win.close()
+    })
+
+    // 最小化窗口
+    globalShortcut.register('CommandOrControl+M', () => {
+      const win = BrowserWindow.getFocusedWindow()
+      if (win) win.minimize()
+    })
+  })
+
+  // 确保在应用退出时注销所有快捷键
+  app.on('will-quit', () => {
+    globalShortcut.unregisterAll()
+  })
 }
