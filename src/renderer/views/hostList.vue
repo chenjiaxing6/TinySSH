@@ -49,7 +49,7 @@
     <!--终-->
     <template #second>
       <div class="tab-container">
-        <a-tabs type="card" :editable="true" @delete="handleDelete" :active-key="activeTabKey" @change="handleTabChange"
+        <a-tabs v-if="data.length > 0" type="card" :editable="true" @delete="handleDelete" :active-key="activeTabKey" @change="handleTabChange"
                 style="height: calc(100% - 40px)">
           <a-tab-pane v-for="(item, index) of data" :key="item.randomId" :title="item.title" style="height: 100%">
             <div class="terminal-wrapper">
@@ -57,6 +57,10 @@
             </div>
           </a-tab-pane>
         </a-tabs>
+        <div v-else class="empty-state">
+          <icon-computer :style="{fontSize: '48px', color: '#c2c2c2'}" />
+          <p>双击左侧主机节点进行连接</p>
+        </div>
         <div class="input-container">
           <a-input
               v-model="globalInput"
@@ -623,5 +627,19 @@ document.addEventListener('click', () => {
   height: 30px;
   padding: 5px;
   background-color: #f0f0f0;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: calc(100% - 40px);
+  color: #888;
+}
+
+.empty-state p {
+  margin-top: 16px;
+  font-size: 16px;
 }
 </style>
