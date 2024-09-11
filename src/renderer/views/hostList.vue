@@ -25,20 +25,21 @@
             </div>
           </div>
         </div>
-        <div class="tree-footer" style="display: flex; align-items: center; justify-content: space-between; padding: 8px;">
+        <div class="tree-footer"
+             style="display: flex; align-items: center; justify-content: space-between; padding: 8px;">
           <a-input-search
-            v-model="searchKeyword"
-            placeholder="筛选"
-            style="width: calc(100% - 70px); height: 24px;"
-            size="mini"
-            @input="handleSearch"
+              v-model="searchKeyword"
+              placeholder="筛选"
+              style="width: calc(100% - 70px); height: 24px;"
+              size="mini"
+              @input="handleSearch"
           />
           <div>
             <a-button shape="circle" size="mini" style="margin-left: 8px;" @click="openCreateFolder">
-              <icon-folder />
+              <icon-folder/>
             </a-button>
             <a-button shape="circle" size="mini" style="margin-left: 8px;" @click="openCreateHost">
-              <icon-computer />
+              <icon-computer/>
             </a-button>
           </div>
         </div>
@@ -48,67 +49,75 @@
     <!--终-->
     <template #second>
       <div class="tab-container">
-        <a-tabs type="card" :editable="true" @delete="handleDelete" :active-key="activeTabKey" @change="handleTabChange" style="height: 100%">
+        <a-tabs type="card" :editable="true" @delete="handleDelete" :active-key="activeTabKey" @change="handleTabChange"
+                style="height: calc(100% - 40px)">
           <a-tab-pane v-for="(item, index) of data" :key="item.randomId" :title="item.title" style="height: 100%">
             <div class="terminal-wrapper">
               <div :ref="el => setTerminalRef(el, item.id)" class="terminal-container"></div>
             </div>
           </a-tab-pane>
         </a-tabs>
+        <div class="input-container">
+          <a-input
+              v-model="globalInput"
+              placeholder="在此输入命令，回车发送到所有终端"
+              @keyup.enter="sendToAllTerminals"
+          />
+        </div>
       </div>
     </template>
   </a-split>
 
   <a-modal
-    v-model:visible="createFolderVisible"
-    title="添加文件夹"
-    @ok="handleFolderOk"
-    @cancel="handleFolderCancel"
+      v-model:visible="createFolderVisible"
+      title="添加文件夹"
+      @ok="handleFolderOk"
+      @cancel="handleFolderCancel"
   >
     <a-form :model="folderForm" :style="{ maxWidth: '500px' }">
       <a-form-item field="parentFolder" label="上级文件夹">
         <a-tree-select
-          v-model="folderForm.parentFolder"
-          :data="folderTreeData"
-          placeholder="请选择上级文件夹(不选择为根节点)"
-          allow-clear
+            v-model="folderForm.parentFolder"
+            :data="folderTreeData"
+            placeholder="请选择上级文件夹(不选择为根节点)"
+            allow-clear
         />
       </a-form-item>
       <a-form-item field="folderName" label="文件夹名称">
-        <a-input v-model="folderForm.folderName" placeholder="请输入文件夹名称" />
+        <a-input v-model="folderForm.folderName" placeholder="请输入文件夹名称"/>
       </a-form-item>
     </a-form>
   </a-modal>
 
   <!-- 添加主机对话框 -->
   <a-modal
-    v-model:visible="createHostVisible"
-    title="添加主机"
-    @ok="handleHostOk"
-    @cancel="handleHostCancel"
+      v-model:visible="createHostVisible"
+      title="添加主机"
+      @ok="handleHostOk"
+      @cancel="handleHostCancel"
   >
     <a-form :model="hostForm" :style="{ maxWidth: '500px' }">
       <a-form-item field="parentFolder" label="上级文件夹">
         <a-tree-select
-          v-model="hostForm.parentFolder"
-          :data="folderTreeData"
-          placeholder="请选择上级文件夹"
+            v-model="hostForm.parentFolder"
+            :data="folderTreeData"
+            placeholder="请选择上级文件夹"
         />
       </a-form-item>
       <a-form-item field="name" label="主机名称">
-        <a-input v-model="hostForm.name" placeholder="请输入主机名称" />
+        <a-input v-model="hostForm.name" placeholder="请输入主机名称"/>
       </a-form-item>
       <a-form-item field="ip" label="IP地址">
-        <a-input v-model="hostForm.ip" placeholder="请输入IP地址" />
+        <a-input v-model="hostForm.ip" placeholder="请输入IP地址"/>
       </a-form-item>
       <a-form-item field="port" label="端口">
-        <a-input-number v-model="hostForm.port" placeholder="请输入端口号" :min="1" :max="65535" />
+        <a-input-number v-model="hostForm.port" placeholder="请输入端口号" :min="1" :max="65535"/>
       </a-form-item>
       <a-form-item field="username" label="用户名">
-        <a-input v-model="hostForm.username" placeholder="请输入用户名" />
+        <a-input v-model="hostForm.username" placeholder="请输入用户名"/>
       </a-form-item>
       <a-form-item field="password" label="密码">
-        <a-input-password v-model="hostForm.password" placeholder="请输入密码" />
+        <a-input-password v-model="hostForm.password" placeholder="请输入密码"/>
       </a-form-item>
     </a-form>
   </a-modal>
@@ -120,7 +129,7 @@ import {Terminal} from "xterm"
 import {FitAddon} from 'xterm-addon-fit'
 import "xterm/css/xterm.css"
 import {AttachAddon} from "xterm-addon-attach";
-import { Message, Modal, Popconfirm } from '@arco-design/web-vue';
+import {Message, Modal, Popconfirm} from '@arco-design/web-vue';
 
 // 定义响应式数据
 const size = ref(0.25);
@@ -156,6 +165,9 @@ const hostForm = reactive({
 // 添加新的响应式变量
 const isEditing = ref(false);
 const editingItemId = ref(null);
+const globalInput = ref('');
+const terminalList: any = ref([]);
+const socketList: any = ref([]);
 
 // 计算属性
 const filteredTreeData = computed(() => {
@@ -166,7 +178,7 @@ const folderTreeData = computed(() => {
   return treeData.value.filter(node => node.type === 'folder').map(folder => ({
     key: folder.key,
     title: folder.title,
-    icon:() => h(IconFolder),
+    icon: () => h(IconFolder),
     children: folder.children ? folder.children.filter(child => child.type === 'folder') : []
   }));
 });
@@ -178,20 +190,21 @@ function getElectronApi() {
 }
 
 function handleSelect(keys: any, event: any) {
-  if(selectedNode.value && selectedNode.value.key === event.node.key){
+  if (selectedNode.value && selectedNode.value.key === event.node.key) {
     openSSH(event);
-  }else{
+  } else {
     selectedNode.value = event.node;
     selectedKeys.value = keys;
   }
 }
-function openSSH(event: any){
+
+function openSSH(event: any) {
   if (event.node.type === 'ssh') {
     const randomId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
     getElectronApi().getPort(randomId).then((port: any) => {
-      getElectronApi().enableWs(randomId,event.node.sshId);
+      getElectronApi().enableWs(randomId, event.node.sshId);
       data.value.push({
-        randomId:randomId,
+        randomId: randomId,
         id: event.node.key,
         title: event.node.title,
         ip: event.node.title
@@ -209,6 +222,8 @@ function openSSH(event: any){
           fontSize: 14,
           fontFamily: 'Menlo, Monaco, "Courier New", monospace',
         });
+        terminalList.value.push(terminal)
+        socketList.value.push(socket)
 
         fitAddon = new FitAddon();
         terminal.loadAddon(fitAddon);
@@ -222,6 +237,11 @@ function openSSH(event: any){
 
         let attachAddon = new AttachAddon(socket);
         terminal.loadAddon(attachAddon);
+
+        // 添加以下代码来处理终端输入
+        terminal.onData((data) => {
+          socket.send(data);
+        });
       });
     });
   }
@@ -229,7 +249,7 @@ function openSSH(event: any){
 
 // 右键菜单
 function onContextMenu(event: any) {
-  if(!selectedNode.value){
+  if (!selectedNode.value) {
     Message.warning('请选择一个节点');
     return;
   }
@@ -247,7 +267,7 @@ function onMenuItemClick(action: any) {
           Message.error('请选择文件夹');
           return;
         }
-        folderForm.parentFolder = selectedNode.value.id+"-folder";
+        folderForm.parentFolder = selectedNode.value.id + "-folder";
         openCreateFolder();
         break;
       case 'edit':
@@ -409,22 +429,22 @@ function handleHostOk() {
     Message.error('请填写所有必填字段');
     return;
   }
-  
+
   // IP地址验证
   const ipRegex = /^(\d{1,3}\.){3}\d{1,3}$/;
   if (!ipRegex.test(hostForm.ip)) {
     Message.error('请输入有效的IP地址');
     return;
   }
-  
+
   // 端口验证
   if (hostForm.port < 1 || hostForm.port > 65535) {
     Message.error('请输入有效的端口号(1-65535)');
     return;
   }
-  
+
   hostForm.parentFolder = hostForm.parentFolder.replace('-folder', '');
-  
+
   if (isEditing.value) {
     getElectronApi().updateSsh({
       id: editingItemId.value,
@@ -482,7 +502,7 @@ function handleHostCancel() {
 }
 
 function deleteFolderAndHost(node: any) {
-  if(node.type === 'folder') {
+  if (node.type === 'folder') {
     Modal.confirm({
       title: '确认删除',
       content: '确定删除该文件夹及其所有子节点吗？',
@@ -498,7 +518,7 @@ function deleteFolderAndHost(node: any) {
         });
       },
     });
-  } else if(node.type === 'ssh') {
+  } else if (node.type === 'ssh') {
     // 处理SSH节点的删除逻辑
   }
 }
@@ -520,6 +540,17 @@ function deleteSsh(sshId: number) {
       });
     },
   });
+}
+
+// 向所有终端发送命令
+function sendToAllTerminals() {
+  if (globalInput.value.trim()) {
+    terminalList.value.forEach((terminal, index) => {
+      terminal.write(globalInput.value + '\r');
+      socketList.value[index].send(globalInput.value + '\r');
+    });
+    globalInput.value = '';
+  }
 }
 
 // 生命周期钩子
@@ -549,20 +580,18 @@ document.addEventListener('click', () => {
 
 .tab-container {
   height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .terminal-wrapper {
   background-color: red;
   width: 100%;
-  height: 95%;
+  height: calc(100% - 5px);
 }
 
 .terminal-container {
   width: 100%;
-  height: 100%;
-}
-
-.tab-container {
   height: 100%;
 }
 
@@ -588,5 +617,11 @@ document.addEventListener('click', () => {
   border: 1px solid #ccc;
   box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
   z-index: 1000;
+}
+
+.input-container {
+  height: 30px;
+  padding: 5px;
+  background-color: #f0f0f0;
 }
 </style>
