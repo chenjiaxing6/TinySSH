@@ -188,7 +188,7 @@ function onShowFramelessWindow(){
   
 function onOpenHomepage(){
   // 调用utils模块的方法打开外链
-  utils.openExternalLink("https://github.com/winsoft666/electron-vue3-boilerplate");
+  utils.openExternalLink("https://github.com/winsoft666/TinySSH");
 }
   
 // 打开当前窗口的调试工具

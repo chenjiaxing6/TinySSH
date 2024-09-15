@@ -241,11 +241,6 @@ function openSSH(event: any) {
 
         let attachAddon = new AttachAddon(socket);
         terminal.loadAddon(attachAddon);
-
-        // 添加以下代码来处理终端输入
-        terminal.onData((data) => {
-          socket.send(data);
-        });
       });
     });
   }
@@ -591,7 +586,7 @@ document.addEventListener('click', () => {
 .terminal-wrapper {
   background-color: red;
   width: 100%;
-  height: calc(100% - 5px);
+  height: calc(100% - 20px);
 }
 
 .terminal-container {

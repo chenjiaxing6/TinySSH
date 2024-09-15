@@ -6,7 +6,7 @@
     "name": "winsoft666",
     "url": "https://github.com/winsoft666"
   },
-  "repository": "https://github.com/winsoft666/electron-vue3-boilerplate",
+  "repository": "https://github.com/winsoft666/TinySSH",
   "main": "build/main/main.js",
   "scripts": {
     "dev": "node scripts/dev-server.mjs development",

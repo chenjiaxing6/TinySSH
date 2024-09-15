@@ -1,12 +1,12 @@
-!define PRODUCT_NAME            "Electron-Vue3-Boilerplate"
+!define PRODUCT_NAME            "TinySSH"
 !define PRODUCT_DESC            "A Electron + Vue3 boilerplate."
-!define EXE_NAME                 "Electron-Vue3-Boilerplate.exe"
+!define EXE_NAME                 "TinySSH.exe"
 !define PRODUCT_VERSION         "1.0.0.0"
 !define PRODUCT_PUBLISHER       "https://github.com/winsoft666/"
 !define PRODUCT_LEGAL            "Copyright (C) 2024. All Rights Reserved"
-!define DESKTOP_LNK_NAME         "Electron-Vue3-Boilerplate"
-!define REG_ORGANIZATION_NAME   "Electron-Vue3-Boilerplate"
-!define REG_APPLICATION_NAME    "Electron-Vue3-Boilerplate"
+!define DESKTOP_LNK_NAME         "TinySSH"
+!define REG_ORGANIZATION_NAME   "TinySSH"
+!define REG_APPLICATION_NAME    "TinySSH"
 
 !include "MUI2.nsh"
 !include "FileFunc.nsh"
@@ -66,7 +66,7 @@ Section "!Files"
 	SetOutPath $INSTDIR
 
 	# TODO
-	File /r "..\..\out\Electron-Vue3-Boilerplate-win32-x64\*"
+	File /r "..\..\out\TinySSH-win32-x64\*"
 SectionEnd
 
 
