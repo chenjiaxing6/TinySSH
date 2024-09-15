@@ -37,18 +37,26 @@ export function registerFolderHandlers() {
             }
         });
 
-        // 添加SSH连接信息到children
+        // 添加SSH连接信息到children或根目录
         sshData.forEach(ssh => {
-            if (ssh.sshId !== null){
-                const folder = folderMap.get(ssh.folderId);
-                if (folder) {
-                    folder.children.push({
-                        ...ssh,
-                        type: 'ssh',
-                        title: ssh.sshName,
-                        key: ssh.sshId+'-ssh',
-                        children: []
-                    });
+            if (ssh.sshId !== null) {
+                const sshNode = {
+                    ...ssh,
+                    type: 'ssh',
+                    title: ssh.sshName,
+                    key: ssh.sshId+'-ssh',
+                    children: []
+                };
+                if (ssh.folderId === null || ssh.folderId === undefined || ssh.folderId === '') {
+                    console.log(ssh)
+                    // 如果SSH没有关联文件夹，添加到根目录
+                    rootFolders.push(sshNode);
+                } else {
+                    // 如果SSH关联了文件夹，添加到对应文件夹的children
+                    const folder = folderMap.get(ssh.folderId);
+                    if (folder) {
+                        folder.children.push(sshNode);
+                    }
                 }
             }
         });

@@ -24,14 +24,12 @@
           </a-menu-item>
         </router-link>
       </a-menu>
-      <div style="padding: 6px">
-        <a-button shape="circle" @click="openSettings">
-          <icon-settings/>
-        </a-button>
-      </div>
-      <div style="padding: 6px">
+      <div style="position: fixed; bottom: 7px; left: 10px; display: flex; flex-direction: column; gap: 10px;">
         <a-button shape="circle" @click="onOpenDevTools">
           <icon-github/>
+        </a-button>
+        <a-button shape="circle" @click="openSettings">
+          <icon-settings/>
         </a-button>
       </div>
     </div>

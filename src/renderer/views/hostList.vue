@@ -26,7 +26,7 @@
           </div>
         </div>
         <div class="tree-footer"
-             style="display: flex; align-items: center; justify-content: space-between; padding: 8px;">
+             style="display: flex; align-items: center; justify-content: space-between; padding: 8px 8px 8px 0;">
           <a-input-search
               v-model="searchKeyword"
               placeholder="筛选"
@@ -77,6 +77,7 @@
       title="添加文件夹"
       @ok="handleFolderOk"
       @cancel="handleFolderCancel"
+      :footer="false"
   >
     <a-form :model="folderForm" :style="{ maxWidth: '500px' }">
       <a-form-item field="parentFolder" label="上级文件夹">
@@ -87,8 +88,17 @@
             allow-clear
         />
       </a-form-item>
-      <a-form-item field="folderName" label="文件夹名称">
+      <a-form-item field="folderName">
+        <template #label>
+          <span style="color: red;">*</span>文件夹名称
+        </template>
         <a-input v-model="folderForm.folderName" placeholder="请输入文件夹名称"/>
+      </a-form-item>
+      <a-form-item>
+        <a-space style="position: absolute; bottom: 20px; right: 20px;">
+          <a-button type="primary" @click="handleFolderOk">确定</a-button>
+          <a-button @click="handleFolderCancel">取消</a-button>
+        </a-space>
       </a-form-item>
     </a-form>
   </a-modal>
@@ -99,6 +109,7 @@
       title="添加主机"
       @ok="handleHostOk"
       @cancel="handleHostCancel"
+      :footer="false"
   >
     <a-form :model="hostForm" :style="{ maxWidth: '500px' }">
       <a-form-item field="parentFolder" label="上级文件夹">
@@ -108,20 +119,41 @@
             placeholder="请选择上级文件夹"
         />
       </a-form-item>
-      <a-form-item field="name" label="主机名称">
+      <a-form-item field="name">
+        <template #label>
+          <span style="color: red;">*</span>主机名称
+        </template>
         <a-input v-model="hostForm.name" placeholder="请输入主机名称"/>
       </a-form-item>
-      <a-form-item field="ip" label="IP地址">
+      <a-form-item field="ip">
+        <template #label>
+          <span style="color: red;">*</span>IP地址
+        </template>
         <a-input v-model="hostForm.ip" placeholder="请输入IP地址"/>
       </a-form-item>
-      <a-form-item field="port" label="端口">
+      <a-form-item field="port">
+        <template #label>
+          <span style="color: red;">*</span>端口
+        </template>
         <a-input-number v-model="hostForm.port" placeholder="请输入端口号" :min="1" :max="65535"/>
       </a-form-item>
-      <a-form-item field="username" label="用户名">
+      <a-form-item field="username">
+        <template #label>
+          <span style="color: red;">*</span>用户名
+        </template>
         <a-input v-model="hostForm.username" placeholder="请输入用户名"/>
       </a-form-item>
-      <a-form-item field="password" label="密码">
+      <a-form-item field="password">
+        <template #label>
+          <span style="color: red;">*</span>密码
+        </template>
         <a-input-password v-model="hostForm.password" placeholder="请输入密码"/>
+      </a-form-item>
+      <a-form-item>
+        <a-space style="position: absolute; bottom: 20px; right: 20px;">
+          <a-button type="primary" @click="handleHostOk">确定</a-button>
+          <a-button @click="handleHostCancel">取消</a-button>
+        </a-space>
       </a-form-item>
     </a-form>
   </a-modal>
@@ -179,15 +211,21 @@ const filteredTreeData = computed(() => {
 });
 
 const folderTreeData = computed(() => {
-  return treeData.value.filter(node => node.type === 'folder').map(folder => ({
-    key: folder.key,
-    title: folder.title,
-    icon: () => h(IconFolder),
-    children: folder.children ? folder.children.filter(child => child.type === 'folder') : []
-  }));
+  const filterFolders = (nodes: any[]): any[] => {
+    return nodes.filter(node => node.type === 'folder').map(folder => ({
+      key: folder.key,
+      title: folder.title,
+      icon: () => h(IconFolder),
+      children: folder.children ? filterFolders(folder.children) : []
+    }));
+  };
+  return [
+    { key: '', title: '根目录', icon: () => h(IconFolder), children: [] },
+    ...filterFolders(treeData.value)
+  ];
 });
 
-// 方法
+
 function getElectronApi() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return window.primaryWindowAPI;
@@ -479,7 +517,6 @@ function handleHostOk() {
       resetHostForm();
     }).catch((error: Error) => {
       console.error('添加SSH主机失败:', error);
-      Message.error('添加SSH主机失败，请重试');
     });
   }
 }
