@@ -322,7 +322,9 @@ function onMenuItemClick(action: any) {
           hostForm.port = Number(selectedNode.value.port);
           hostForm.username = selectedNode.value.userName;
           hostForm.password = ''; // 出于安全考虑,不回显密码
-          hostForm.parentFolder = selectedNode.value.folderId + "-folder";
+          if (selectedNode.value.folderId) {
+            hostForm.parentFolder = selectedNode.value.folderId + "-folder";
+          }
           openCreateHost();
         }
         break;
