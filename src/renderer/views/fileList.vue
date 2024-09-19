@@ -1,203 +1,277 @@
 <template>
-  <a-layout class="sftp-manager">
-    <a-layout-sider width="250px">
-      <div class="server-list">
-        <h3>SFTP 服务器</h3>
-        <a-select
-            v-model="selectedServer"
-            placeholder="选择服务器"
-            style="width: 100%"
-            @change="handleServerChange"
-        >
-          <a-option v-for="server in servers" :key="server.id" :value="server.id">
-            {{ server.name }}
-          </a-option>
-        </a-select>
-        <a-button type="primary" style="margin-top: 10px; width: 100%" @click="handleAddServer">
-          添加服务器
-        </a-button>
-      </div>
-    </a-layout-sider>
-    <a-layout-content>
-      <div class="file-list-container">
-        <div class="action-bar">
-          <a-space>
-            <a-button type="primary" @click="handleUpload">
-              <template #icon><icon-upload /></template>
-              上传
-            </a-button>
-            <a-button @click="handleNewFolder">
-              <template #icon><icon-folder-add /></template>
-              新建文件夹
-            </a-button>
-            <a-input-search
-                placeholder="搜索文件"
-                style="width: 200px"
-                @search="handleSearch"
-            />
-          </a-space>
+  <a-split :style="{
+    height: '100%',
+    width: '100%',
+    minWidth: '500px',
+  }" v-model:size="size" min="80px">
+    <!--主机列表-->
+    <template #first>
+      <div class="tree-container">
+        <div style="background-color: rgb(242, 242, 242);height: 100%;padding: 8px">
+          <a-tree :data="filteredTreeData" @select="handleSelect" :selected-keys="selectedKeys">
+
+          </a-tree>
         </div>
-        <a-table :columns="columns" :data="fileData" :pagination="false" :scroll="{ y: 'calc(100vh - 180px)' }">
-          <template #name="{ record }">
-            <a-space>
-              <icon-file v-if="record.type === 'file'" />
-              <icon-folder v-else :style="{ color: '#FFD700' }" />
-              {{ record.name }}
-            </a-space>
-          </template>
-          <template #operations="{ record }">
-            <a-space>
-              <a-button type="text" size="small" @click="handleDownload(record)">
-                <icon-download />
-              </a-button>
-              <a-button type="text" size="small" @click="handleEdit(record)">
-                <icon-edit />
-              </a-button>
-              <a-button type="text" size="small" status="danger" @click="handleDelete(record)">
-                <icon-delete />
-              </a-button>
-            </a-space>
-          </template>
-        </a-table>
+        <div class="tree-footer"
+          style="display: flex; align-items: center; justify-content: space-between; padding: 8px 8px 8px 0;">
+          <a-input-search v-model="searchKeyword" placeholder="筛选" style="width: calc(100% - 20px); height: 24px;"
+            size="mini" @input="handleSearch" />
+          <div>
+            <a-button shape="circle" size="mini" style="margin-left: 8px;" @click="refreshTree">
+              <icon-refresh />
+            </a-button>
+          </div>
+        </div>
       </div>
-    </a-layout-content>
-  </a-layout>
+    </template>
+
+    <!--文件列表-->
+    <template #second>
+      <div class="tab-container">
+        <a-tabs v-if="data.length > 0" type="card" :editable="true" @delete="handleDelete" :active-key="activeTabKey"
+          @change="handleTabChange" style="height: calc(100% - 40px)">
+          <a-tab-pane v-for="(item, index) of data" :key="item.randomId" :title="item.title" style="height: 100%">
+            <div class="sftp-container" style="padding-left: 16px; padding-right: 16px;">
+              <div class="path-display">
+                <a-input-group style="width: 100%; margin-bottom: 10px;margin-top: 10px;">
+                  <a-button>
+                    <icon-home />
+                  </a-button>
+                  <a-input v-model="currentDirectory" readonly style="width: calc(100% - 32px);" />
+                </a-input-group>
+                <div class="action-buttons" style="margin-bottom: 10px;">
+                  <a-button size="small" @click="createFile" type="primary">创建</a-button>
+                  <a-button-group size="small">
+                    <a-button @click="uploadFile">上传</a-button>
+                    <a-button @click="copyFile">复制</a-button>
+                    <a-button @click="moveFile">移动</a-button>
+                    <a-button @click="compressFile">压缩</a-button>
+                    <a-button @click="changePermissions">权限</a-button>
+                    <a-button @click="deleteFile">删除</a-button>
+                  </a-button-group>
+                </div>
+              </div>
+              <a-table :data="fileList" :pagination="false">
+                <template #columns>
+                  <a-table-column title="名称" data-index="name">
+                    <template #cell="{ record }">
+                      <icon-folder v-if="record.type === 'directory'" />
+                      <icon-file v-else />
+                      {{ record.name }}
+                    </template>
+                  </a-table-column>
+                  <a-table-column title="大小" data-index="size" />
+                  <a-table-column title="修改日期" data-index="modifiedDate" />
+                  <a-table-column title="操作">
+                    <template #cell="{ record }">
+                      <a-button v-if="record.type === 'directory'" @click="enterDirectory(record.name)">进入</a-button>
+                      <a-button v-else @click="downloadFile(record.name)">下载</a-button>
+                    </template>
+                  </a-table-column>
+                </template>
+              </a-table>
+            </div>
+          </a-tab-pane>
+        </a-tabs>
+        <div v-else class="empty-state">
+          <icon-computer :style="{ fontSize: '48px', color: '#c2c2c2' }" />
+          <p>双击左侧主机节点连接SFTP</p>
+        </div>
+      </div>
+    </template>
+  </a-split>
 </template>
+<script setup lang="ts">
+import { reactive, ref, h, onMounted, nextTick, computed } from 'vue';
+import { IconFolder, IconComputer, IconSettings, IconRefresh,IconHome } from '@arco-design/web-vue/es/icon';
+import "xterm/css/xterm.css"
+import { Message } from '@arco-design/web-vue';
+// 定义响应式数据
+const size = ref(0.25);
+const showContextMenu = ref(false);
+const selectedNode: any = ref(null);
+const selectedKeys = ref([]);
+const searchKeyword = ref('');
+const treeData = ref([]);
+const data: any = ref([]);
+const activeTabKey = ref<string | null>(null);
+const currentPath = ref([]);
+const fileList = ref([]);
 
-<script>
-import { defineComponent, ref } from 'vue';
-import {
-  IconFile,
-  IconFolder,
-  IconUpload,
-  IconFolderAdd,
-  IconDownload,
-  IconEdit,
-  IconDelete
-} from '@arco-design/web-vue/es/icon';
-
-export default defineComponent({
-  components: {
-    IconFile,
-    IconFolder,
-    IconUpload,
-    IconFolderAdd,
-    IconDownload,
-    IconEdit,
-    IconDelete,
-  },
-  setup() {
-    const columns = [
-      {
-        title: '名称',
-        dataIndex: 'name',
-        slotName: 'name',
-      },
-      {
-        title: '大小',
-        dataIndex: 'size',
-      },
-      {
-        title: '修改日期',
-        dataIndex: 'modifiedDate',
-      },
-      {
-        title: '权限',
-        dataIndex: 'permissions',
-      },
-      {
-        title: '操作',
-        slotName: 'operations',
-        width: 120,
-        align: 'center',
-      },
-    ];
-
-    const fileData = ref([
-      { name: 'document.txt', type: 'file', size: '10 KB', modifiedDate: '2023-05-20 10:30', permissions: 'rw-r--r--' },
-      { name: 'images', type: 'folder', size: '-', modifiedDate: '2023-05-19 15:45', permissions: 'drwxr-xr-x' },
-      { name: 'project.zip', type: 'file', size: '1.5 MB', modifiedDate: '2023-05-18 09:00', permissions: 'rw-r--r--' },
-      { name: 'config.json', type: 'file', size: '2 KB', modifiedDate: '2023-05-17 14:20', permissions: 'rw-r--r--' },
-      { name: 'backup', type: 'folder', size: '-', modifiedDate: '2023-05-16 11:10', permissions: 'drwxr-xr-x' },
-    ]);
-
-    const servers = ref([
-      { id: 1, name: 'Server 1' },
-      { id: 2, name: 'Server 2' },
-      { id: 3, name: 'Server 3' },
-    ]);
-
-    const selectedServer = ref(null);
-
-    const handleUpload = () => {
-      console.log('Upload clicked');
-    };
-
-    const handleNewFolder = () => {
-      console.log('New folder clicked');
-    };
-
-    const handleSearch = (value) => {
-      console.log('Search:', value);
-    };
-
-    const handleServerChange = (serverId) => {
-      console.log('Selected server:', serverId);
-      // 这里你可以添加加载选定服务器文件的逻辑
-    };
-
-    const handleAddServer = () => {
-      console.log('Add server clicked');
-      // 这里你可以添加打开添加服务器对话框的逻辑
-    };
-
-    const handleDownload = (record) => {
-      console.log('Download:', record.name);
-    };
-
-    const handleEdit = (record) => {
-      console.log('Edit:', record.name);
-    };
-
-    const handleDelete = (record) => {
-      console.log('Delete:', record.name);
-    };
-
-    return {
-      columns,
-      fileData,
-      servers,
-      selectedServer,
-      handleUpload,
-      handleNewFolder,
-      handleSearch,
-      handleServerChange,
-      handleAddServer,
-      handleDownload,
-      handleEdit,
-      handleDelete,
-    };
-  },
+// 计算属性
+const filteredTreeData = computed(() => {
+  return searchKeyword.value ? filterTree(treeData.value, searchKeyword.value.toLowerCase()) : treeData.value;
 });
+
+
+function getElectronApi() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return window.primaryWindowAPI;
+}
+
+function handleSelect(keys: any, event: any) {
+  if (selectedNode.value && selectedNode.value.key === event.node.key) {
+    openSSH(event);
+  } else {
+    selectedNode.value = event.node;
+    selectedKeys.value = keys;
+  }
+}
+
+function openSSH(event: any) {
+  if (event.node.type === 'ssh') {
+    const randomId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    data.value.push({
+      randomId: randomId,
+      id: event.node.key,
+      title: event.node.title,
+      ip: event.node.title
+    });
+  }
+}
+
+// 搜索过滤
+function filterTree(nodes: any, keyword: any) {
+  if (!keyword) {
+    return nodes;
+  }
+  return nodes.filter((node: any) => {
+    if (node.title.toLowerCase().includes(keyword)) {
+      return true;
+    }
+    if (node.children && node.children.length) {
+      const filteredChildren = filterTree(node.children, keyword);
+      if (filteredChildren.length) {
+        return true;
+      }
+    }
+    return false;
+  });
+}
+
+function refreshTree() {
+  getTreeData();
+  Message.success('刷新主机列表成功');
+}
+
+function handleSearch() {
+  if (!searchKeyword.value) {
+    getTreeData();
+  }
+}
+
+// tab相关
+function handleDelete(key: any) {
+  data.value = data.value.filter((item: any) => item.randomId !== key)
+}
+
+// 添加一个新的方法来处理标签页切换
+function handleTabChange(key: string) {
+  activeTabKey.value = key;
+}
+
+// 列表相关
+function getTreeData() {
+  getElectronApi().getTreeInfo().then((res: any) => {
+    res.forEach(addIconToProps);
+    treeData.value = res;
+  })
+}
+
+function addIconToProps(node: any) {
+  if (node.type === 'folder') {
+    node.icon = () => h(IconFolder);
+  } else if (node.type === 'ssh') {
+    node.icon = () => h(IconComputer);
+  }
+  if (node.children) {
+    node.children.forEach(addIconToProps);
+  }
+}
+
+// 生命周期钩子
+onMounted(() => {
+  getTreeData()
+})
+
+// 事件监听器
+document.addEventListener('click', () => {
+  showContextMenu.value = false;
+});
+
 </script>
 
 <style scoped>
-.sftp-manager {
-  height: 100vh;
+.tree-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%
 }
 
-.server-list {
-  padding: 16px;
+.tree-footer {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px;
 }
 
-.file-list-container {
+.tab-container {
   height: 100%;
   display: flex;
   flex-direction: column;
 }
 
-.action-bar {
-  padding: 10px;
-  background-color: #f5f5f5;
+.terminal-wrapper {
+  background-color: red;
+  width: 100%;
+  height: calc(100% - 20px);
+}
+
+.terminal-container {
+  width: 100%;
+  height: 100%;
+}
+
+:deep(.arco-tabs-content) {
+  padding-top: 2px;
+  height: 100%;
+}
+
+:deep(.arco-tabs-content-list) {
+  height: 100%;
+}
+
+:deep(.arco-tabs-pane) {
+  height: 100%;
+}
+
+:deep(.terminal) {
+  height: 100%;
+}
+
+.context-menu {
+  background: white;
+  border: 1px solid #ccc;
+  box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+}
+
+.input-container {
+  height: 30px;
+  padding: 5px;
+  background-color: #f0f0f0;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: calc(100% - 40px);
+  color: #888;
+}
+
+.empty-state p {
+  margin-top: 16px;
+  font-size: 16px;
 }
 </style>

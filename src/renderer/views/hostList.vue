@@ -59,7 +59,7 @@
         </a-tabs>
         <div v-else class="empty-state">
           <icon-computer :style="{fontSize: '48px', color: '#c2c2c2'}" />
-          <p>双击左侧主机节点进行连接</p>
+          <p>双击左侧主机节点连接SSH</p>
         </div>
         <div class="input-container">
           <a-input
