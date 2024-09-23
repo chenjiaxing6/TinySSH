@@ -23,7 +23,6 @@ export function registerFolderHandlers() {
         folderData.forEach(folder => {
             folderMap.set(folder.id, { ...folder, type: 'folder', children: [] ,title: folder.folderName,key: folder.id+'-folder' });
         });
-        debugger
         // 构建树结构
         const rootFolders = [] as any[];
         folderMap.forEach(folder => {

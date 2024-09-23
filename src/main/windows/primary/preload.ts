@@ -37,4 +37,8 @@ contextBridge.exposeInMainWorld("primaryWindowAPI", {
         ipcRenderer.invoke("update-ssh", sshData),
     updateFolder: (folderData: { id: number; parentFolder: string; folderName: string }) => 
         ipcRenderer.invoke("update-folder", folderData),
+
+    // sftp
+    getSftpList:(param:string) => ipcRenderer.invoke("get-sftp-list",param),
+    uploadSftpFile: (param) => ipcRenderer.invoke('upload-sftp-file', param)
 });

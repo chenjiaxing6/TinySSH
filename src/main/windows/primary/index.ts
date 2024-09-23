@@ -8,13 +8,12 @@ import { WebSocketServer } from "ws";
 const SSH2Client = require('ssh2').Client;
 import {registerFolderHandlers} from "../../handle/folderHandler";
 import { initializeDatabase } from '../../database/connection';
-import * as sshOps from '../../database/sshOption';
 import SSHHandler from "../../handle/sshHandler";
+import SFTPHandler from "../../handle/sftpHandler";
 
 
 
 class PrimaryWindow extends WindowBase{
-  private sshHandler: SSHHandler
   constructor(){
     // 调用WindowBase构造函数创建窗口
     super({
@@ -34,12 +33,10 @@ class PrimaryWindow extends WindowBase{
     });
 
     this.openRouter("/primary");
-    this.sshHandler = new SSHHandler(this._browserWindow!);
-    // initializeDatabase();
-    // userOps.createUser("11", "test", "123456","11");
     initializeDatabase();
     this.registerHandles();
-    this.sshHandler.registerHandlers();
+    new SSHHandler(this._browserWindow!).registerHandlers();
+    new SFTPHandler(this._browserWindow!).registerHandlers();
   }
 
   protected registerIpcMainHandler(): void{
