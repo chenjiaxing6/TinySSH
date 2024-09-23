@@ -123,26 +123,46 @@ class SFTPHandler {
                 reject(err);
                 return;
             }
-            debugger
+
             remotePath = remotePath.replace('~','/home/' + conn.config.username)
             const remoteFilePath = path.join(remotePath, path.basename(localFilePath));
-            console.log(remoteFilePath)
-            const readStream = fs.createReadStream(localFilePath);
-            const writeStream = sftp.createWriteStream(remoteFilePath);
 
-            writeStream.on('close', () => {
-                console.log(`File ${localFilePath} uploaded successfully`);
-                conn.end();
-                resolve({ success: true, message: `File uploaded successfully` });
+            fs.stat(localFilePath, (err, stats) => {
+                if (err) {
+                    conn.end();
+                    reject(err);
+                    return;
+                }
+
+                const totalSize = stats.size;
+                let uploadedSize = 0;
+
+                const readStream = fs.createReadStream(localFilePath);
+                const writeStream = sftp.createWriteStream(remoteFilePath);
+
+                readStream.on('data', (chunk) => {
+                    uploadedSize += chunk.length;
+                    const progress = Math.round((uploadedSize / totalSize) * 100);
+                    // 发送进度信息到渲染进程
+                    if (this.mainWindow && this.mainWindow.webContents) {
+                        this.mainWindow.webContents.send('upload-progress', progress);
+                    }
+                });
+
+                writeStream.on('close', () => {
+                    console.log(`File ${localFilePath} uploaded successfully`);
+                    conn.end();
+                    resolve({ success: true, message: `File uploaded successfully` });
+                });
+
+                writeStream.on('error', (err) => {
+                    console.error(`Error uploading file ${localFilePath}:`, err);
+                    conn.end();
+                    reject(err);
+                });
+
+                readStream.pipe(writeStream);
             });
-
-            writeStream.on('error', (err) => {
-                console.error(`Error uploading file ${localFilePath}:`, err);
-                conn.end();
-                reject(err);
-            });
-
-            readStream.pipe(writeStream);
         });
     }
 }

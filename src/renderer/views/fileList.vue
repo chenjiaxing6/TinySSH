@@ -81,8 +81,9 @@
               <a-modal v-model:visible="item.showUploadDialog" :hide-title="true" :footer="false" :width="500">
                 <a-upload draggable
                           :custom-request="handleUpload"
-                          :file-list="item.uploadList"
-                          multiple/>
+                          :file-list="item.uploadList"/>
+              <!-- 进度条 -->
+              <a-progress :percent="item.uploadProgress" v-if="item.showProgress" status="active" style="margin-top: 10px;"/>
               </a-modal>
             </div>
           </a-tab-pane>
@@ -205,6 +206,7 @@ function enterDirectoryInput(item: any) {
 
 const currentItem:any = ref(null)
 function openUpload(item: any) {
+  item.fileList = []
   item.showUploadDialog = true
   currentItem.value = item
 }
@@ -213,8 +215,11 @@ const handleUpload = async (option: any) => {
   let sshId = activeTabKey.value.split("-")[0]
   const {fileItem, onProgress, onSuccess, onError} = option
   try {
-    // 开始上传时显示进度
-    onProgress({percent: 0})
+    currentItem.value.showProgress = true
+    getElectronApi().onUploadProgress((progress) => {
+      // 更新进度条
+      currentItem.value.uploadProgress = progress/100
+    });
 
     // 获取文件路径
     const filePath = fileItem.file.path
@@ -229,13 +234,11 @@ const handleUpload = async (option: any) => {
       "fileName": fileItem.file.name
     }
 
-    console.log(param)
     // 调用 Electron 的主进程来处理文件上传
     const result = await getElectronApi().uploadSftpFile(param)
-
-    console.log(result)
     // 上传完成
     onProgress({percent: 100})
+    currentItem.value.showProgress = false
     onSuccess(result)
     Message.success(`文件 ${fileItem.file.name} 上传成功`)
   } catch (error) {
