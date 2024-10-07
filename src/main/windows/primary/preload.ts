@@ -45,4 +45,5 @@ contextBridge.exposeInMainWorld("primaryWindowAPI", {
     deleteSftpFile: (param) => ipcRenderer.invoke('delete-sftp-file', param),
     changeSftpFilePermissions: (param) => ipcRenderer.invoke('change-sftp-file-permissions', param),
     compressSftpFiles: (param) => ipcRenderer.invoke('compress-file', param),
+    pasteSftpFile: (param) => ipcRenderer.invoke('paste-sftp-file', param),
 });

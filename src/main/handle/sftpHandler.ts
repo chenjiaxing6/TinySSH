@@ -20,6 +20,119 @@ class SFTPHandler {
         ipcMain.handle("delete-sftp-file", (event, sftpData) => this.handleDeleteFile(event, sftpData));
         ipcMain.handle("change-sftp-file-permissions", (event, sftpData) => this.handleChangeFilePermissions(event, sftpData));
         ipcMain.handle("compress-file", (event, sftpData) => this.handleCompressFile(event, sftpData));
+        ipcMain.handle("paste-sftp-file", (event, sftpData) => this.handlePasteFile(event, sftpData));
+    }
+
+    async handlePasteFile(event, sftpData) {
+        let conn;
+        try {
+            sftpData = JSON.parse(sftpData);
+            const sshInfo = await sshOps.getSshInfoById(sftpData.sshId);
+            conn = await this.connectSSH(sshInfo);
+            const username = conn.config.username;
+            sftpData.sourcePath = sftpData.sourcePath.replace('~', `/home/${username}`);
+            sftpData.targetPath = sftpData.targetPath.replace('~', `/home/${username}`);
+    
+            const sftp:any = await new Promise((resolve, reject) => {
+                conn.sftp((err, sftp) => {
+                    if (err) reject(err);
+                    else resolve(sftp);
+                });
+            });
+    
+            const totalFiles = sftpData.files.length;
+            for (let i = 0; i < totalFiles; i++) {
+                const file = sftpData.files[i];
+                const sourcePath = path.join(sftpData.sourcePath, file);
+                const targetPath = path.join(sftpData.targetPath, file);
+    
+                const stats:any = await new Promise((resolve, reject) => {
+                    sftp.stat(sourcePath, (err, stats) => {
+                        if (err) reject(err);
+                        else resolve(stats);
+                    });
+                });
+    
+                if (stats.isDirectory()) {
+                    await new Promise((resolve, reject) => {
+                        let command = `cp -r ${sourcePath} ${targetPath}`;
+                        let stderr = '';
+                        
+                        conn.exec(command, (err, stream) => {
+                            if (err) {
+                                reject(err);
+                                return;
+                            }
+                            
+                            stream.on('close', (code) => {
+                                if (code !== 0) {
+                                    reject(new Error(`复制目录失败，退出码: ${code}，错误信息: ${stderr}`));
+                                } else {
+                                    resolve("粘贴成功");
+                                }
+                            });
+                    
+                            stream.on('data', (data) => {
+                                console.log('STDOUT: ' + data);
+                            });
+                    
+                            stream.stderr.on('data', (data) => {
+                                stderr += data;
+                                console.error('STDERR: ' + data);
+                            });
+                    
+                            // 添加超时处理
+                            setTimeout(() => {
+                                reject(new Error('复制操作超时'));
+                                stream.close();
+                            }, 120000); // 120秒超时，因为目录复制可能需要更长时间
+                        });
+                    });
+                } else {
+                    await new Promise((resolve, reject) => {
+                        let command = `cp ${sourcePath} ${targetPath}`;
+                        let stderr = '';
+                        
+                        conn.exec(command, (err, stream) => {
+                            if (err) {
+                                reject(err);
+                                return;
+                            }
+                            
+                            stream.on('close', (code) => {
+                                if (code !== 0) {
+                                    reject(new Error(`复制文件失败，退出码: ${code}，错误信息: ${stderr}`));
+                                } else {
+                                    resolve("粘贴成功");
+                                }
+                            });
+                    
+                            stream.on('data', (data) => {
+                                console.log('STDOUT: ' + data);
+                            });
+                    
+                            stream.stderr.on('data', (data) => {
+                                stderr += data;
+                                console.error('STDERR: ' + data);
+                            });
+                    
+                            // 添加超时处理
+                            setTimeout(() => {
+                                reject(new Error('复制操作超时'));
+                                stream.close();
+                            }, 60000); // 60秒超时
+                        });
+                    });
+                }
+            }
+            return "粘贴成功";
+        } catch (error:any) {
+            console.error('粘贴文件时发生错误:', error);
+            this.mainWindow.webContents.send('paste-error', error.message);
+            throw error; // 重新抛出错误，让 Electron 的 IPC 系统处理
+        } finally {
+            if (conn) conn.end();
+        }
     }
 
 
@@ -44,7 +157,7 @@ class SFTPHandler {
                 sftpData.targetPath = sftpData.targetPath.replace('~', '/home/' + conn.config.username)
 
                 let command = ''
-                if(sftpData.sourcePath === sftpData.targetPath) {
+                if (sftpData.sourcePath === sftpData.targetPath) {
                     command = `cd "${sftpData.sourcePath}" && tar -czvf ${sftpData.name}.${sftpData.format} ${sftpData.files.join(' ')}`
                 } else {
                     command = `cd "${sftpData.sourcePath}" && tar -czvf ${sftpData.name}.${sftpData.format} ${sftpData.files.join(' ')} && mv ${sftpData.name}.${sftpData.format} ${sftpData.targetPath}`

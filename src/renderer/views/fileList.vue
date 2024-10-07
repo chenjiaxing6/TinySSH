@@ -52,6 +52,7 @@
                     <a-button @click="compressFile" :disabled="item.selectedRowKeys.length === 0">压缩</a-button>
                     <a-button @click="changePermissions" :disabled="item.selectedRowKeys.length === 0">权限</a-button>
                     <a-button @click="deleteFile" :disabled="item.selectedRowKeys.length === 0">删除</a-button>
+                    <a-button @click="pasteFile" :disabled="item.copyList.length === 0">粘贴</a-button>
                   </a-button-group>
                 </div>
               </div>
@@ -336,6 +337,8 @@ async function openSSH(event: any) {
         currentDirectory: dir,
         sshId: sshId,
         selectedRowKeys: [],
+        copyList: [],
+        copyPath: '',
       });
       activeTabKey.value = event.node.key.split("-")[0] + "-" + randomId
     })
@@ -688,6 +691,39 @@ async function applyCompress() {
   }
 }
 
+async function copyFile() {
+  currentItem.value.copyList = currentItem.value.selectedRowKeys
+  currentItem.value.copyPath = currentItem.value.currentDirectory
+  currentItem.value.selectedRowKeys = []
+  Message.success('复制成功')
+}
+
+async function pasteFile() {
+  if(currentItem.value.copyList.length === 0){
+    Message.warning('没有需要粘贴的文件')
+    return
+  }
+  if(currentItem.value.copyPath === currentItem.value.currentDirectory){
+    Message.warning('不能粘贴到自身目录')
+    return
+  }
+  let sshId = currentItem.value.sshId
+  let sourcePath = currentItem.value.copyPath
+  let targetPath = currentItem.value.currentDirectory
+  try{
+    await getElectronApi().pasteSftpFile(JSON.stringify({
+      "sshId": sshId,
+    "sourcePath": sourcePath,
+    "targetPath": targetPath,
+    "files": currentItem.value.copyList
+    }))
+    Message.success('粘贴成功')
+    // 刷新列表
+    enterDirectoryInput(currentItem.value)
+  }catch(error){
+    Message.error('粘贴失败：' + error.message)
+  }
+}
 // 生命周期钩子
 onMounted(() => {
   getTreeData()
