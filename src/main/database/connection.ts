@@ -42,6 +42,31 @@ function createTables(): void {
         "folderType" TEXT
       )
     `);
+
+    // 创建 configs 表
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS "configs" (
+        "id" INTEGER PRIMARY KEY AUTOINCREMENT,
+        "name" TEXT NOT NULL UNIQUE,
+        "description" TEXT,
+        "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        "updated_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // 创建 config_items 表
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS "config_items" (
+        "id" INTEGER PRIMARY KEY AUTOINCREMENT,
+        "config_id" INTEGER NOT NULL,
+        "key" TEXT NOT NULL,
+        "value" TEXT NOT NULL,
+        "description" TEXT,
+        "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        "updated_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE (config_id, key)
+      )
+    `);
 }
 
 export function getDatabase(): Database.Database {

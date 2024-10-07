@@ -46,4 +46,8 @@ contextBridge.exposeInMainWorld("primaryWindowAPI", {
     changeSftpFilePermissions: (param) => ipcRenderer.invoke('change-sftp-file-permissions', param),
     compressSftpFiles: (param) => ipcRenderer.invoke('compress-file', param),
     pasteSftpFile: (param) => ipcRenderer.invoke('paste-sftp-file', param),
+
+    // 设置
+    testWebDav: (param) => ipcRenderer.invoke('test-webdav', param),
+    saveSyncSettings: (param) => ipcRenderer.invoke('save-sync-settings', param),
 });

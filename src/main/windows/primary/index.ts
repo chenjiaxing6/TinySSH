@@ -10,6 +10,7 @@ import {registerFolderHandlers} from "../../handle/folderHandler";
 import { initializeDatabase } from '../../database/connection';
 import SSHHandler from "../../handle/sshHandler";
 import SFTPHandler from "../../handle/sftpHandler";
+import SettingHandler from "../../handle/settingHandler";
 
 
 
@@ -37,6 +38,7 @@ class PrimaryWindow extends WindowBase{
     this.registerHandles();
     new SSHHandler(this._browserWindow!).registerHandlers();
     new SFTPHandler(this._browserWindow!).registerHandlers();
+    new SettingHandler(this._browserWindow!).registerHandlers();
   }
 
   protected registerIpcMainHandler(): void{

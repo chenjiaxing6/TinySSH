@@ -14,7 +14,11 @@
           @menu-item-click="handleSelect"
           style="height: 100%"
         >
-          <a-menu-item key="general">
+          <a-menu-item key="sync">
+            <template #icon><icon-sync /></template>
+            同步设置
+          </a-menu-item>
+          <!-- <a-menu-item key="general">
             <template #icon><icon-settings /></template>
             通用设置
           </a-menu-item>
@@ -25,7 +29,7 @@
           <a-menu-item key="advanced">
             <template #icon><icon-bulb /></template>
             高级设置
-          </a-menu-item>
+          </a-menu-item> -->
         </a-menu>
       </a-layout-sider>
       <a-layout-content style="padding: 0 24px">
@@ -37,11 +41,11 @@
 
 <script setup lang="ts">
 import { ref, shallowRef } from 'vue';
-import { IconSettings, IconSkin, IconBulb } from '@arco-design/web-vue/es/icon';
+import { IconSettings, IconSkin, IconBulb, IconSync } from '@arco-design/web-vue/es/icon';
 import GeneralSettings from './settings/GeneralSettings.vue';
 import AppearanceSettings from './settings/AppearanceSettings.vue';
 import AdvancedSettings from './settings/AdvancedSettings.vue';
-
+import SyncSettings from './settings/SyncSettings.vue';
 const visible = ref(false);
 const activeKey = ref('general');
 const currentSettingComponent = shallowRef(GeneralSettings);
@@ -57,6 +61,9 @@ const handleSelect = (key) => {
       break;
     case 'advanced':
       currentSettingComponent.value = AdvancedSettings;
+      break;
+    case 'sync':
+      currentSettingComponent.value = SyncSettings;
       break;
   }
 };
