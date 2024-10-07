@@ -44,4 +44,5 @@ contextBridge.exposeInMainWorld("primaryWindowAPI", {
     onUploadProgress: (callback) => ipcRenderer.on('upload-progress', (_event, value) => callback(value)),
     deleteSftpFile: (param) => ipcRenderer.invoke('delete-sftp-file', param),
     changeSftpFilePermissions: (param) => ipcRenderer.invoke('change-sftp-file-permissions', param),
+    compressSftpFiles: (param) => ipcRenderer.invoke('compress-file', param),
 });

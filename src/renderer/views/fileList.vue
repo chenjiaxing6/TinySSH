@@ -134,13 +134,98 @@
             <Checkbox v-model="permissionData.applyToSubfiles">同时修改子文件属性</Checkbox>
           </div>
         </Modal>
+
+        <!-- 压缩文件弹窗 -->
+        <Modal
+          v-model:visible="compressModalVisible"
+          @ok="applyCompress"
+          @cancel="compressModalVisible = false"
+          title="压缩文件"
+        >
+          <div style="margin-bottom: 16px;">
+            <div>压缩格式：</div>
+            <a-select v-model="compressData.format" style="width: 100%;">
+              <a-option value="zip">zip</a-option>
+              <a-option value="tar">tar</a-option>
+              <a-option value="tar.gz">tar.gz</a-option>
+            </a-select>
+          </div>
+          <div style="margin-bottom: 16px;">
+            <div>压缩文件名：</div>
+            <a-row :gutter="8">
+              <a-col :span="18">
+                <a-input
+                  v-model="compressData.name"
+                  placeholder="请输入文件名"
+                  allow-clear
+                >
+                  <template #prefix>
+                    <icon-file />
+                  </template>
+                </a-input>
+              </a-col>
+              <a-col :span="6">
+                <a-input
+                  disabled
+                  readonly
+                  v-model="compressData.format"
+                >
+                </a-input>
+              </a-col>
+            </a-row>
+          </div>
+          <div style="margin-bottom: 16px;">
+            <div>压缩路径：</div>
+            <a-input v-model="compressData.path" placeholder="默认为当前路径" >
+              <template #append>
+                <a-button @click="selectCompressPath">选择路径</a-button>
+              </template>
+            </a-input>
+          </div>
+        </Modal>
+
+        <!-- 选择路径的模态框 -->
+        <Modal
+          v-model:visible="selectPathModalVisible"
+          @ok="confirmSelectPath"
+          @cancel="selectPathModalVisible = false"
+          title="选择路径"
+        >
+          <!-- 添加路径导航 -->
+          <div style="margin-bottom: 16px;">
+            <a-breadcrumb>
+              <a-breadcrumb-item>
+                <a @click="navigateToRoot">根目录</a>
+              </a-breadcrumb-item>
+              <a-breadcrumb-item v-for="(segment, index) in pathSegments" :key="index">
+                <a @click="navigateToPath(index)">{{ segment }}</a>
+              </a-breadcrumb-item>
+            </a-breadcrumb>
+          </div>
+
+          <a-table :data="selectPathFileList" :pagination="false" :scroll="{ y: '300px' }" row-key="name">
+            <template #columns>
+              <a-table-column title="名称" data-index="name">
+                <template #cell="{ record }">
+                  <a-space>
+                    <icon-folder style="cursor: pointer" @click="enterSelectPathDirectory(record)" />
+                    <span style="cursor: pointer" @click="enterSelectPathDirectory(record)">{{ record.name }}</span>
+                  </a-space>
+                </template>
+              </a-table-column>
+            </template>
+          </a-table>
+          <div style="margin-top: 16px;">
+            <Input v-model="selectedPath" placeholder="当前选择的路径" />
+          </div>
+        </Modal>
       </div>
     </template>
   </a-split>
 </template>
 <script setup lang="ts">
 import { reactive, ref, h, onMounted, nextTick, computed } from 'vue';
-import { IconFolder, IconComputer, IconSettings, IconRefresh, IconHome } from '@arco-design/web-vue/es/icon';
+import { IconFolder, IconComputer, IconSettings, IconRefresh, IconHome, IconFile } from '@arco-design/web-vue/es/icon';
 import "xterm/css/xterm.css"
 import { Message } from '@arco-design/web-vue';
 import { Modal, Checkbox, Input, Select } from '@arco-design/web-vue';
@@ -184,6 +269,33 @@ const filteredTreeData = computed(() => {
   return searchKeyword.value ? filterTree(treeData.value, searchKeyword.value.toLowerCase()) : treeData.value;
 });
 
+// 在 <script setup> 部分添加以下响应式变量
+const compressModalVisible = ref(false);
+const compressData = reactive({
+  format: 'zip',
+  name: '',
+  path: '',
+});
+
+const selectPathModalVisible = ref(false);
+const selectPathFileList = ref([]);
+const selectedPath = ref('');
+
+// 在 <script setup> 部分添加以下计算属性和方法
+const pathSegments = computed(() => {
+  return selectedPath.value.split('/').filter(segment => segment !== '');
+});
+
+function navigateToRoot() {
+  selectedPath.value = '/';
+  loadSelectPathFileList('/');
+}
+
+function navigateToPath(index) {
+  const newPath = '/' + pathSegments.value.slice(0, index + 1).join('/');
+  selectedPath.value = newPath;
+  loadSelectPathFileList(newPath);
+}
 
 function getElectronApi() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -450,7 +562,7 @@ function changePermissions() {
     // 初始化 permissionData
     permissionData.numericPermission = item.permissions.slice(-3);
     
-    // 设置所有者权限
+    // ��置所有者权限
     permissionData.owner.read = (numericPermission & 0o400) !== 0;
     permissionData.owner.write = (numericPermission & 0o200) !== 0;
     permissionData.owner.execute = (numericPermission & 0o100) !== 0;
@@ -501,6 +613,79 @@ async function applyPermissions() {
   permissionModalVisible.value = false;
   // 刷新列表
   enterDirectoryInput(currentItem.value);
+}
+
+// 修改 compressFile 函数
+function compressFile() {
+  compressModalVisible.value = true;
+  compressData.name = ''; // 重置名称
+  if (currentItem.value.selectedRowKeys.length === 1) {
+    let name = currentItem.value.selectedRowKeys[0]
+    if(name.startsWith('.')){
+      compressData.name = name
+    }else if(name.includes('.')){
+      compressData.name = name.substring(0, name.lastIndexOf('.'))
+    }else{
+      compressData.name = name
+    }
+  }else{
+    // 随机
+    compressData.name = Math.random().toString(36).substring(2, 15)
+  }
+  compressData.path = currentItem.value.currentDirectory; // 默认为当前路径
+}
+
+// 添加以下函数
+async function selectCompressPath() {
+  selectPathModalVisible.value = true;
+  selectedPath.value = currentItem.value.currentDirectory;
+  await loadSelectPathFileList(selectedPath.value);
+}
+
+async function loadSelectPathFileList(path) {
+  try {
+    const res = await getElectronApi().getSftpList({ 'sshId': currentItem.value.sshId, 'toPath': path });
+    selectPathFileList.value = res.filter(item => item.type === 'directory').sort((a, b) => {
+      return a.name.localeCompare(b.name);
+    });
+  } catch (error) {
+    Message.error('加载文件列表失败：' + error.message);
+  }
+}
+
+async function enterSelectPathDirectory(record) {
+  let targetPath = selectedPath.value;
+  if (targetPath.endsWith('/')) {
+    targetPath += record.name;
+  } else {
+    targetPath += '/' + record.name;
+  }
+  selectedPath.value = targetPath;
+  await loadSelectPathFileList(targetPath);
+}
+
+function confirmSelectPath() {
+  compressData.path = selectedPath.value;
+  selectPathModalVisible.value = false;
+}
+
+async function applyCompress() {
+  try {
+    await getElectronApi().compressSftpFiles(JSON.stringify({
+      sshId: currentItem.value.sshId,
+      sourcePath: currentItem.value.currentDirectory,
+      files: currentItem.value.selectedRowKeys,
+      format: compressData.format,
+      name: compressData.name,
+      targetPath: compressData.path
+    }));
+    Message.success('文件压缩成功');
+    compressModalVisible.value = false;
+    // 刷新列表
+    enterDirectoryInput(currentItem.value);
+  } catch (error) {
+    Message.error('文件压缩失败：' + error.message);
+  }
 }
 
 // 生命周期钩子

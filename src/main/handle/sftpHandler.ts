@@ -1,4 +1,4 @@
-import {ipcMain, dialog, BrowserWindow} from "electron";
+import { ipcMain, dialog, BrowserWindow } from "electron";
 import SSHHandler from "./sshHandler";
 import * as sshOps from "../database/sshOption";
 import path from "path";
@@ -19,6 +19,61 @@ class SFTPHandler {
         ipcMain.handle("upload-sftp-file", (event, sftpData) => this.handleUploadFile(event, sftpData));
         ipcMain.handle("delete-sftp-file", (event, sftpData) => this.handleDeleteFile(event, sftpData));
         ipcMain.handle("change-sftp-file-permissions", (event, sftpData) => this.handleChangeFilePermissions(event, sftpData));
+        ipcMain.handle("compress-file", (event, sftpData) => this.handleCompressFile(event, sftpData));
+    }
+
+
+    async handleCompressFile(event, sftpData) {
+        sftpData = JSON.parse(sftpData)
+        console.log(sftpData)
+        // 压缩文件
+        // {
+        //     sshId: '10',
+        //     sourcePath: '~',
+        //     files: [ '.config' ],
+        //     format: 'zip',
+        //     name: '11',
+        //     targetPath: '~'
+        //   }
+        return new Promise(async (resolve, reject) => {
+            try {
+                const sshInfo = await sshOps.getSshInfoById(sftpData.sshId);
+                const conn = await this.connectSSH(sshInfo);
+
+                sftpData.sourcePath = sftpData.sourcePath.replace('~', '/home/' + conn.config.username)
+                sftpData.targetPath = sftpData.targetPath.replace('~', '/home/' + conn.config.username)
+
+                let command = ''
+                if(sftpData.sourcePath === sftpData.targetPath) {
+                    command = `cd "${sftpData.sourcePath}" && tar -czvf ${sftpData.name}.${sftpData.format} ${sftpData.files.join(' ')}`
+                } else {
+                    command = `cd "${sftpData.sourcePath}" && tar -czvf ${sftpData.name}.${sftpData.format} ${sftpData.files.join(' ')} && mv ${sftpData.name}.${sftpData.format} ${sftpData.targetPath}`
+                }
+                console.log(command)
+                conn.exec(command, (err, stream) => {
+                    if (err) {
+                        conn.end();
+                        reject(err);
+                        return;
+                    }
+
+                    stream.on('close', (code, signal) => {
+                        conn.end();
+                        if (code === 0) {
+                            resolve('文件压缩成功');
+                        } else {
+                            reject(new Error(`压缩过程出错，退出码: ${code}`));
+                        }
+                    }).on('data', (data) => {
+                        console.log('压缩输出:', data.toString());
+                    }).stderr.on('data', (data) => {
+                        console.error('压缩错误:', data.toString());
+                    });
+                });
+            } catch (error) {
+                reject(error);
+            }
+        });
     }
 
     async handleGetList(event, sftpData) {
@@ -63,40 +118,40 @@ class SFTPHandler {
                 return;
             }
             console.log("开始更改文件权限");
-    
-            dirPath = dirPath.replace('~','/home/' + conn.config.username);
-    
+
+            dirPath = dirPath.replace('~', '/home/' + conn.config.username);
+
             const changePermissionsRecursively = async (filePath) => {
                 try {
-                    const stats:any = await new Promise((resolve, reject) => {
+                    const stats: any = await new Promise((resolve, reject) => {
                         sftp.stat(filePath, (err, stats) => {
                             if (err) reject(err);
                             else resolve(stats);
                         });
                     });
-    
+
                     await new Promise((resolve, reject) => {
                         sftp.chmod(filePath, parseInt(permissions, 8), (err) => {
                             if (err) reject(err);
                             else resolve(null);
                         });
                     });
-    
+
                     await new Promise((resolve, reject) => {
                         sftp.chown(filePath, ownerName, groupName, (err) => {
                             if (err) reject(err);
                             else resolve(null);
                         });
                     });
-    
+
                     if (stats.isDirectory() && applyToSubfiles) {
-                        const list:any = await new Promise((resolve, reject) => {
+                        const list: any = await new Promise((resolve, reject) => {
                             sftp.readdir(filePath, (err, list) => {
                                 if (err) reject(err);
                                 else resolve(list);
                             });
                         });
-    
+
                         for (const item of list) {
                             await changePermissionsRecursively(path.join(filePath, item.filename));
                         }
@@ -106,14 +161,14 @@ class SFTPHandler {
                     throw error;
                 }
             };
-    
+
             const promises = files.map(file => {
                 console.log("开始实际更改", dirPath, file);
                 const filePath = path.join(dirPath, file);
                 console.log("完整文件路径", filePath);
                 return changePermissionsRecursively(filePath);
             });
-    
+
             Promise.all(promises)
                 .then(() => {
                     console.log("所有文件权限更改完成");
@@ -164,7 +219,7 @@ class SFTPHandler {
                 return;
             }
 
-            path = path.replace('~','/home/' + conn.config.username)
+            path = path.replace('~', '/home/' + conn.config.username)
 
             sftp.readdir(path || '.', (err, list) => {
                 if (err) {
@@ -202,7 +257,7 @@ class SFTPHandler {
             throw error;
         }
     }
-    
+
     async handleDeleteFile(event, sftpData) {
         sftpData = JSON.parse(sftpData)
         try {
@@ -232,8 +287,8 @@ class SFTPHandler {
                 reject(err);
                 return;
             }
-            remotePath = remotePath.replace('~','/home/' + conn.config.username)
-            
+            remotePath = remotePath.replace('~', '/home/' + conn.config.username)
+
             const deleteRecursive = (sftp, path) => {
                 return new Promise((resolve, reject) => {
                     sftp.stat(path, (err, stats) => {
@@ -257,12 +312,12 @@ class SFTPHandler {
                     });
                 });
             };
-    
+
             const promises = files.map(file => {
                 const filePath = path.join(remotePath, file);
                 return deleteRecursive(sftp, filePath);
             });
-    
+
             Promise.all(promises)
                 .then(() => {
                     conn.end();
@@ -294,7 +349,7 @@ class SFTPHandler {
                 return;
             }
 
-            remotePath = remotePath.replace('~','/home/' + conn.config.username)
+            remotePath = remotePath.replace('~', '/home/' + conn.config.username)
             const remoteFilePath = path.join(remotePath, path.basename(localFilePath));
 
             fs.stat(localFilePath, (err, stats) => {
@@ -336,7 +391,7 @@ class SFTPHandler {
         });
     }
 
-    
+
 }
 
 export default SFTPHandler;
