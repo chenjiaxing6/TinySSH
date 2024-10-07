@@ -339,6 +339,7 @@ async function openSSH(event: any) {
         selectedRowKeys: [],
         copyList: [],
         copyPath: '',
+        moveAndCopy: ''// 是复制还是移动 copy move
       });
       activeTabKey.value = event.node.key.split("-")[0] + "-" + randomId
     })
@@ -695,6 +696,7 @@ async function copyFile() {
   currentItem.value.copyList = currentItem.value.selectedRowKeys
   currentItem.value.copyPath = currentItem.value.currentDirectory
   currentItem.value.selectedRowKeys = []
+  currentItem.value.moveAndCopy = "copy"
   Message.success('复制成功')
 }
 
@@ -715,15 +717,30 @@ async function pasteFile() {
       "sshId": sshId,
     "sourcePath": sourcePath,
     "targetPath": targetPath,
-    "files": currentItem.value.copyList
+    "files": currentItem.value.copyList,
+    "moveAndCopy": currentItem.value.moveAndCopy
     }))
-    Message.success('粘贴成功')
+    if(currentItem.value.moveAndCopy === "copy"){
+      Message.success('复制成功')
+    }else{
+      Message.success('移动成功')
+    }
     // 刷新列表
     enterDirectoryInput(currentItem.value)
   }catch(error){
     Message.error('粘贴失败：' + error.message)
   }
 }
+
+function moveFile() {
+  currentItem.value.copyList = currentItem.value.selectedRowKeys
+  currentItem.value.copyPath = currentItem.value.currentDirectory
+  currentItem.value.selectedRowKeys = []
+  currentItem.value.moveAndCopy = "move"
+  Message.success('请进入目标目录进行粘贴')
+}
+
+
 // 生命周期钩子
 onMounted(() => {
   getTreeData()

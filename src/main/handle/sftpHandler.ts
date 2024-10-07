@@ -55,7 +55,12 @@ class SFTPHandler {
     
                 if (stats.isDirectory()) {
                     await new Promise((resolve, reject) => {
-                        let command = `cp -r ${sourcePath} ${targetPath}`;
+                        let command = ''
+                        if(sftpData.moveAndCopy === "copy"){
+                            command = `cp -r ${sourcePath} ${targetPath}`;
+                        }else{
+                            command = `mv ${sourcePath} ${targetPath}`;
+                        }
                         let stderr = '';
                         
                         conn.exec(command, (err, stream) => {
@@ -90,7 +95,12 @@ class SFTPHandler {
                     });
                 } else {
                     await new Promise((resolve, reject) => {
-                        let command = `cp ${sourcePath} ${targetPath}`;
+                        let command = ''
+                        if(sftpData.moveAndCopy === "copy"){
+                            command = `cp ${sourcePath} ${targetPath}`;
+                        }else{
+                            command = `mv ${sourcePath} ${targetPath}`;
+                        }
                         let stderr = '';
                         
                         conn.exec(command, (err, stream) => {
@@ -352,13 +362,36 @@ class SFTPHandler {
     private formatFileList(list): any[] {
         return list.map(item => ({
             name: item.filename,
-            size: item.attrs.size,
-            modifyDate: new Date(item.attrs.mtime * 1000).toISOString(),
-            permissions: item.attrs.mode.toString(8).slice(-4),
+            size: this.formatFileSize(item.attrs.size),
+            modifyDate: this.formatDate(item.attrs.mtime * 1000),
+            permissions: item.attrs.mode.toString(8).slice(-3),
             type: item.attrs.isDirectory() ? 'directory' : 'file',
             owner: item.attrs.uid,
             group: item.attrs.gid,
         }));
+    }
+    
+    private formatFileSize(bytes: number): string {
+        if (bytes >= 1048576) { // 1 MB = 1048576 bytes
+            return (bytes / 1048576).toFixed(2) + ' MB';
+        } else if (bytes >= 1024) {
+            return (bytes / 1024).toFixed(2) + ' KB';
+        } else {
+            return bytes + ' B';
+        }
+    }
+    
+    private formatDate(timestamp: number): string {
+        const date = new Date(timestamp);
+        return date.toLocaleString('zh-CN', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false
+        }).replace(/\//g, '-');
     }
 
     async handleUploadFile(event, sftpData) {
