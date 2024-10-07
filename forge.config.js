@@ -66,7 +66,7 @@ module.exports = {
     win32metadata: {
       ProductName: "TinySSH",
       CompanyName: "",
-      FileDescription: "A Electron + Vue3 + Vite Boilerplate",
+      FileDescription: "TinySSH",
       // 如果安装包需要以管理员权限运行，请打开下面的注释
       // "requested-execution-level": "requireAdministrator",
     },

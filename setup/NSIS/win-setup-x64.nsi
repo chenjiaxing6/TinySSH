@@ -1,5 +1,5 @@
 !define PRODUCT_NAME            "TinySSH"
-!define PRODUCT_DESC            "A Electron + Vue3 boilerplate."
+!define PRODUCT_DESC            "TinySSH"
 !define EXE_NAME                 "TinySSH.exe"
 !define PRODUCT_VERSION         "1.0.0.0"
 !define PRODUCT_PUBLISHER       "https://github.com/winsoft666/"
