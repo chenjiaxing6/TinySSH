@@ -29,6 +29,7 @@
     "@xterm/xterm": "^5.5.0",
     "axios": "^1.6.7",
     "better-sqlite3": "^11.1.2",
+    "codemirror": "5",
     "electron-log": "^5.1.0",
     "electron-rebuild": "^3.2.9",
     "node-expect": "^0.1.0",

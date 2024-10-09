@@ -77,6 +77,13 @@
                     <a-table-column title="大小" data-index="size" />
                     <a-table-column title="修改日期" data-index="modifyDate" />
                     <a-table-column title="权限" data-index="permissions" />
+                    <a-table-column title="操作" width="100px">
+                      <template #cell="{ record,index}">
+                        <a-button v-if="record.type !== 'directory'" size="small" @click="editFile(record, item)">
+                          编辑
+                        </a-button>
+                      </template>
+                    </a-table-column>
                   </template>
                 </a-table>
               </div>
@@ -98,12 +105,8 @@
         </div>
 
         <!-- 设置权限弹窗 -->
-        <Modal
-          v-model:visible="permissionModalVisible"
-          @ok="applyPermissions"
-          @cancel="permissionModalVisible = false"
-          title="设置权限"
-        >
+        <Modal v-model:visible="permissionModalVisible" @ok="applyPermissions" @cancel="permissionModalVisible = false"
+          title="设置权限">
           <div style="margin-bottom: 16px;">
             <div>所有者：</div>
             <Checkbox v-model="permissionData.owner.read" @change="updateNumericPermission">读取</Checkbox>
@@ -137,12 +140,8 @@
         </Modal>
 
         <!-- 压缩文件弹窗 -->
-        <Modal
-          v-model:visible="compressModalVisible"
-          @ok="applyCompress"
-          @cancel="compressModalVisible = false"
-          title="压缩文件"
-        >
+        <Modal v-model:visible="compressModalVisible" @ok="applyCompress" @cancel="compressModalVisible = false"
+          title="压缩文件">
           <div style="margin-bottom: 16px;">
             <div>压缩格式：</div>
             <a-select v-model="compressData.format" style="width: 100%;">
@@ -155,29 +154,21 @@
             <div>压缩文件名：</div>
             <a-row :gutter="8">
               <a-col :span="18">
-                <a-input
-                  v-model="compressData.name"
-                  placeholder="请输入文件名"
-                  allow-clear
-                >
+                <a-input v-model="compressData.name" placeholder="请输入文件名" allow-clear>
                   <template #prefix>
                     <icon-file />
                   </template>
                 </a-input>
               </a-col>
               <a-col :span="6">
-                <a-input
-                  disabled
-                  readonly
-                  v-model="compressData.format"
-                >
+                <a-input disabled readonly v-model="compressData.format">
                 </a-input>
               </a-col>
             </a-row>
           </div>
           <div style="margin-bottom: 16px;">
             <div>压缩路径：</div>
-            <a-input v-model="compressData.path" placeholder="默认为当前路径" >
+            <a-input v-model="compressData.path" placeholder="默认为当前路径">
               <template #append>
                 <a-button @click="selectCompressPath">选择路径</a-button>
               </template>
@@ -186,12 +177,8 @@
         </Modal>
 
         <!-- 选择路径的模态框 -->
-        <Modal
-          v-model:visible="selectPathModalVisible"
-          @ok="confirmSelectPath"
-          @cancel="selectPathModalVisible = false"
-          title="选择路径"
-        >
+        <Modal v-model:visible="selectPathModalVisible" @ok="confirmSelectPath" @cancel="selectPathModalVisible = false"
+          title="选择路径">
           <!-- 添加路径导航 -->
           <div style="margin-bottom: 16px;">
             <a-breadcrumb>
@@ -220,6 +207,12 @@
             <Input v-model="selectedPath" placeholder="当前选择的路径" />
           </div>
         </Modal>
+
+        <!-- 文件编辑模态框 -->
+        <a-modal v-model:visible="editModalVisible" title="编辑文件" @ok="saveFile" @cancel="closeEditModal"
+          :ok-button-props="{ disabled: !editedContent }" width="80%">
+          <div ref="editorContainer"></div>
+        </a-modal>
       </div>
     </template>
   </a-split>
@@ -230,6 +223,9 @@ import { IconFolder, IconComputer, IconSettings, IconRefresh, IconHome, IconFile
 import "xterm/css/xterm.css"
 import { Message } from '@arco-design/web-vue';
 import { Modal, Checkbox, Input, Select } from '@arco-design/web-vue';
+import CodeMirror from 'codemirror';
+import 'codemirror/lib/codemirror.css';
+
 // 定义响应式数据
 const size = ref(0.25);
 const showContextMenu = ref(false);
@@ -558,32 +554,32 @@ function changePermissions() {
   permissionModalVisible.value = true;
   // 从data列表中获取文件信息
   currentItem.value.fileList.forEach((item: any) => {
-    if(item.name === currentItem.value.selectedRowKeys[0]){
-    // 将 item.permissions 转换为 permissionData  格式为：0755
-    // 将权限字符串转换为数字
-    const numericPermission = parseInt(item.permissions, 8);
-    
-    // 初始化 permissionData
-    permissionData.numericPermission = item.permissions.slice(-3);
-    
-    // ��置所有者权限
-    permissionData.owner.read = (numericPermission & 0o400) !== 0;
-    permissionData.owner.write = (numericPermission & 0o200) !== 0;
-    permissionData.owner.execute = (numericPermission & 0o100) !== 0;
-    
-    // 设置群组权限
-    permissionData.group.read = (numericPermission & 0o040) !== 0;
-    permissionData.group.write = (numericPermission & 0o020) !== 0;
-    permissionData.group.execute = (numericPermission & 0o010) !== 0;
-    
-    // 设置其他用户权限
-    permissionData.others.read = (numericPermission & 0o004) !== 0;
-    permissionData.others.write = (numericPermission & 0o002) !== 0;
-    permissionData.others.execute = (numericPermission & 0o001) !== 0;
+    if (item.name === currentItem.value.selectedRowKeys[0]) {
+      // 将 item.permissions 转换为 permissionData  格式为：0755
+      // 将权限字符串转换为数字
+      const numericPermission = parseInt(item.permissions, 8);
 
-    // 设置ownerName和groupName
-    permissionData.ownerName = item.owner
-    permissionData.groupName = item.group
+      // 初始化 permissionData
+      permissionData.numericPermission = item.permissions.slice(-3);
+
+      // ��置所有者权限
+      permissionData.owner.read = (numericPermission & 0o400) !== 0;
+      permissionData.owner.write = (numericPermission & 0o200) !== 0;
+      permissionData.owner.execute = (numericPermission & 0o100) !== 0;
+
+      // 设置群组权限
+      permissionData.group.read = (numericPermission & 0o040) !== 0;
+      permissionData.group.write = (numericPermission & 0o020) !== 0;
+      permissionData.group.execute = (numericPermission & 0o010) !== 0;
+
+      // 设置其他用户权限
+      permissionData.others.read = (numericPermission & 0o004) !== 0;
+      permissionData.others.write = (numericPermission & 0o002) !== 0;
+      permissionData.others.execute = (numericPermission & 0o001) !== 0;
+
+      // 设置ownerName和groupName
+      permissionData.ownerName = item.owner
+      permissionData.groupName = item.group
     }
   })
   // 默认勾选
@@ -625,14 +621,14 @@ function compressFile() {
   compressData.name = ''; // 重置名称
   if (currentItem.value.selectedRowKeys.length === 1) {
     let name = currentItem.value.selectedRowKeys[0]
-    if(name.startsWith('.')){
+    if (name.startsWith('.')) {
       compressData.name = name
-    }else if(name.includes('.')){
+    } else if (name.includes('.')) {
       compressData.name = name.substring(0, name.lastIndexOf('.'))
-    }else{
+    } else {
       compressData.name = name
     }
-  }else{
+  } else {
     // 随机
     compressData.name = Math.random().toString(36).substring(2, 15)
   }
@@ -701,33 +697,33 @@ async function copyFile() {
 }
 
 async function pasteFile() {
-  if(currentItem.value.copyList.length === 0){
+  if (currentItem.value.copyList.length === 0) {
     Message.warning('没有需要粘贴的文件')
     return
   }
-  if(currentItem.value.copyPath === currentItem.value.currentDirectory){
+  if (currentItem.value.copyPath === currentItem.value.currentDirectory) {
     Message.warning('不能粘贴到自身目录')
     return
   }
   let sshId = currentItem.value.sshId
   let sourcePath = currentItem.value.copyPath
   let targetPath = currentItem.value.currentDirectory
-  try{
+  try {
     await getElectronApi().pasteSftpFile(JSON.stringify({
       "sshId": sshId,
-    "sourcePath": sourcePath,
-    "targetPath": targetPath,
-    "files": currentItem.value.copyList,
-    "moveAndCopy": currentItem.value.moveAndCopy
+      "sourcePath": sourcePath,
+      "targetPath": targetPath,
+      "files": currentItem.value.copyList,
+      "moveAndCopy": currentItem.value.moveAndCopy
     }))
-    if(currentItem.value.moveAndCopy === "copy"){
+    if (currentItem.value.moveAndCopy === "copy") {
       Message.success('复制成功')
-    }else{
+    } else {
       Message.success('移动成功')
     }
     // 刷新列表
     enterDirectoryInput(currentItem.value)
-  }catch(error){
+  } catch (error) {
     Message.error('粘贴失败：' + error.message)
   }
 }
@@ -740,6 +736,93 @@ function moveFile() {
   Message.success('请进入目标目录进行粘贴')
 }
 
+// 文件编辑
+const editModalVisible = ref(false);
+const editedContent = ref('');
+const editingFile = ref(null);
+
+const editorContainer = ref(null);
+let editor: CodeMirror.Editor | null = null;
+async function editFile(record: any) {
+  let currentItem = data.value.find((item: any) => item.randomId === activeTabKey.value)
+  try {
+    let param = {
+      sshId: currentItem.sshId,
+      path: `${currentItem.currentDirectory}/${record.name}`
+    }
+    const content = await getElectronApi().readSftpFile(JSON.stringify(param));
+    editedContent.value = content;
+    editingFile.value = record;
+    editModalVisible.value = true;
+    
+    nextTick(() => {
+      setTimeout(() => {
+        if (editorContainer.value) {
+          cleanupEditor();
+          editor = CodeMirror(editorContainer.value, {
+            value: content,
+            lineNumbers: true,
+            lineWrapping: true,
+            mode: 'text/plain', 
+            scrollbarStyle: 'native', 
+            lineWrapping: true, 
+          });
+          editor.on('change', (cm) => {
+            editedContent.value = cm.getValue();
+          });
+          
+          // 手动触发一次 refresh
+          editor.refresh();
+          
+          // 确保编辑器获得焦点
+          editor.focus();
+        }
+      }, 200); // 给予一个小的延迟，确保模态框已经打开
+    });
+  } catch (error: any) {
+    Message.error('读取文件内容失败：' + error.message);
+  }
+}
+
+function cleanupEditor() {
+  if (editor) {
+    editor = null;
+  }
+  if (editorContainer.value) {
+    editorContainer.value.innerHTML = ''; // 清空容器
+  }
+}
+
+// 获取当前激活的tab信息
+function getCurrentItem() {
+  return data.value.find((item: any) => item.randomId === activeTabKey.value)
+}
+
+async function saveFile() {
+  let currentItem = getCurrentItem()
+  try {
+    let param = {
+      sshId: currentItem.sshId,
+      path: `${currentItem.currentDirectory}/${editingFile.value.name}`,
+      content: editedContent.value
+    }
+    console.log('发送的参数:', param);
+    const result = await getElectronApi().writeSftpFile(JSON.stringify(param));
+    console.log('保存结果:', result);
+    Message.success('文件保存成功');
+    editModalVisible.value = false;
+    // 刷新文件列表
+    enterDirectoryInput(currentItem);
+  } catch (error: any) {
+    console.error('保存文件错误:', error);
+    Message.error('保存文件失败：' + error.message);
+  }
+}
+
+function closeEditModal() {
+  editModalVisible.value = false;
+  cleanupEditor();
+}
 
 // 生命周期钩子
 onMounted(() => {
@@ -825,5 +908,37 @@ document.addEventListener('click', () => {
 .empty-state p {
   margin-top: 16px;
   font-size: 16px;
+}
+/** 编辑器 */
+:deep(.CodeMirror) {
+  height: 80vh;
+  font-family: monospace;
+  font-size: 14px;
+  line-height: 1.5;
+  width: 100%; 
+  padding-right: 10px;
+}
+
+:deep(.CodeMirror-scroll) {
+  height: 100%;
+  padding-bottom: 30px;
+}
+
+:deep(.CodeMirror-sizer) {
+  margin-left: 60px !important; /* 调整这个值 */
+  padding-right: 10px !important;
+}
+
+:deep(.CodeMirror-gutters) {
+  left: 0 !important; /* 添加这行 */
+}
+
+:deep(.CodeMirror-linenumber) {
+  padding: 0 3px 0 5px; /* 添加这行 */
+}
+
+:deep(.CodeMirror-lines) {
+  padding: 8px 0;
+  padding-right: 10px;
 }
 </style>
