@@ -87,7 +87,7 @@
                     <a-table-column title="修改日期" data-index="modifyDate" />
                     <a-table-column title="权限" data-index="permissions" />
                     <a-table-column title="操作" width="100px">
-                      <template #cell="{ record,index}">
+                      <template #cell="{ record, index }">
                         <a-button v-if="record.type !== 'directory'" size="small" @click="editFile(record, item)">
                           编辑
                         </a-button>
@@ -223,21 +223,18 @@
           <div ref="editorContainer"></div>
         </a-modal>
 
-      <!-- 创建文件/文件夹弹框 -->
-      <a-modal v-model:visible="createModalVisible" :title="createType === 'file' ? '创建文件' : '创建文件夹'" @ok="confirmCreate" @cancel="cancelCreate">
-        <a-form :model="createForm">
-          <a-form-item field="name" label="名称">
-            <a-input v-model="createForm.name" :placeholder="createType === 'file' ? '请输入文件名' : '请输入文件夹名'" />
-          </a-form-item>
-        </a-form>
-      </a-modal>
+        <!-- 创建文件/文件夹弹框 -->
+        <a-modal v-model:visible="createModalVisible" :title="createType === 'file' ? '创建文件' : '创建文件夹'"
+          @ok="confirmCreate" @cancel="cancelCreate">
+          <a-input v-model="createForm.name" :placeholder="createType === 'file' ? '请输入文件名' : '请输入文件夹名'" />
+        </a-modal>
       </div>
     </template>
   </a-split>
 </template>
 <script setup lang="ts">
 import { reactive, ref, h, onMounted, nextTick, computed } from 'vue';
-import { IconFolder, IconComputer, IconSettings, IconRefresh, IconHome, IconFile,IconDown } from '@arco-design/web-vue/es/icon';
+import { IconFolder, IconComputer, IconSettings, IconRefresh, IconHome, IconFile, IconDown } from '@arco-design/web-vue/es/icon';
 import "xterm/css/xterm.css"
 import { Message } from '@arco-design/web-vue';
 import { Modal, Checkbox, Input, Select } from '@arco-design/web-vue';
@@ -510,7 +507,7 @@ function handleDelete(key: string) {
   const index = data.value.findIndex((item: any) => item.randomId === key);
   if (index > -1) {
     data.value.splice(index, 1);
-    
+
     // 如果删除的是当前激活的标签页
     if (key === activeTabKey.value) {
       // 如果还有其他标签页
@@ -527,7 +524,7 @@ function handleDelete(key: string) {
         activeTabKey.value = null;
       }
     }
-    
+
     // 更新 currentItem
     if (data.value.length > 0) {
       currentItem.value = data.value.find((item: any) => item.randomId === activeTabKey.value);
@@ -807,7 +804,7 @@ async function editFile(record: any) {
     editedContent.value = content;
     editingFile.value = record;
     editModalVisible.value = true;
-    
+
     nextTick(() => {
       setTimeout(() => {
         if (editorContainer.value) {
@@ -816,17 +813,17 @@ async function editFile(record: any) {
             value: content,
             lineNumbers: true,
             lineWrapping: true,
-            mode: 'text/plain', 
-            scrollbarStyle: 'native', 
-            lineWrapping: true, 
+            mode: 'text/plain',
+            scrollbarStyle: 'native',
+            lineWrapping: true,
           });
           editor.on('change', (cm) => {
             editedContent.value = cm.getValue();
           });
-          
+
           // 手动触发一次 refresh
           editor.refresh();
-          
+
           // 确保编辑器获得焦点
           editor.focus();
         }
@@ -904,7 +901,7 @@ async function confirmCreate() {
     Message.success('创建成功');
     // 刷新文件列表
     enterDirectoryInput(currentItem);
-  }else{
+  } else {
     Message.error('创建失败');
   }
 }
@@ -999,13 +996,14 @@ document.addEventListener('click', () => {
   margin-top: 16px;
   font-size: 16px;
 }
+
 /** 编辑器 */
 :deep(.CodeMirror) {
   height: 80vh;
   font-family: monospace;
   font-size: 14px;
   line-height: 1.5;
-  width: 100%; 
+  width: 100%;
   padding-right: 10px;
 }
 
@@ -1015,16 +1013,19 @@ document.addEventListener('click', () => {
 }
 
 :deep(.CodeMirror-sizer) {
-  margin-left: 60px !important; /* 调整这个值 */
+  margin-left: 60px !important;
+  /* 调整这个值 */
   padding-right: 10px !important;
 }
 
 :deep(.CodeMirror-gutters) {
-  left: 0 !important; /* 添加这行 */
+  left: 0 !important;
+  /* 添加这行 */
 }
 
 :deep(.CodeMirror-linenumber) {
-  padding: 0 3px 0 5px; /* 添加这行 */
+  padding: 0 3px 0 5px;
+  /* 添加这行 */
 }
 
 :deep(.CodeMirror-lines) {
