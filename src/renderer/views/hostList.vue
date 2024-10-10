@@ -180,7 +180,7 @@ const selectedKeys = ref([]);
 const searchKeyword = ref('');
 const treeData = ref([]);
 let count = 5;
-const data: any = ref([]);
+const data = ref([]);
 const activeTabKey = ref<string | null>(null);
 
 // 表单数据
@@ -427,8 +427,31 @@ function handleSearch() {
 }
 
 // tab相关
-function handleDelete(key: any) {
-  data.value = data.value.filter(item => item.randomId !== key)
+function handleDelete(key: string) {
+  const index = data.value.findIndex(item => item.randomId === key);
+  if (index > -1) {
+    data.value.splice(index, 1);
+    
+    // 如果删除的是当前激活的标签页，则激活前一个标签页
+    if (key === activeTabKey.value) {
+      if (index > 0) {
+        // 如果不是第一个标签页，激活前一个
+        activeTabKey.value = data.value[index - 1].randomId;
+      } else if (data.value.length > 0) {
+        // 如果是第一个标签页且还有其他标签页，激活下一个
+        activeTabKey.value = data.value[0].randomId;
+      } else {
+        // 如果没有其他标签页了，设置为 null
+        activeTabKey.value = null;
+      }
+    }
+  }
+  // 强制更新视图
+  nextTick(() => {
+    if (data.value.length > 0 && !activeTabKey.value) {
+      activeTabKey.value = data.value[0].randomId;
+    }
+  });
 }
 
 // 添加一个新的方法来处理标签页切换

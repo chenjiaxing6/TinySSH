@@ -29,7 +29,7 @@
     <template #second>
       <div class="tab-container">
         <a-tabs v-if="data.length > 0" type="card" :editable="true" @delete="handleDelete" :active-key="activeTabKey"
-          style="height: calc(100% - 10px)">
+          @change="handleTabChange" style="height: calc(100% - 10px)">
           <a-tab-pane v-for="(item, index) of data" :key="item.randomId" :title="item.title" style="height: 100%">
             <div class="sftp-container"
               style="padding-left: 16px; padding-right: 16px; height: 100%; display: flex; flex-direction: column;">
@@ -91,7 +91,7 @@
               <!-- 文件上传 -->
               <a-modal v-model:visible="item.showUploadDialog" :hide-title="true" :footer="false" :width="500">
                 <a-upload draggable :custom-request="handleUpload" :file-list="item.uploadList" />
-                <!-- 进度条 -->
+                <!-- 进条 -->
                 <a-progress :percent="item.uploadProgress" v-if="item.showProgress" status="active"
                   style="margin-top: 10px;" />
               </a-modal>
@@ -313,7 +313,8 @@ async function openSSH(event: any) {
     const randomId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
     let sshId = event.node.key.split("-")[0]
     let dir = '~'
-    getElectronApi().getSftpList({ 'sshId': sshId, 'toPath': dir }).then((res: any) => {
+    try {
+      const res = await getElectronApi().getSftpList({ 'sshId': sshId, 'toPath': dir });
       // 将文件排序，文件夹在前，文件在后
       res.sort((a: any, b: any) => {
         if (a.type === 'directory' && b.type !== 'directory') {
@@ -324,7 +325,7 @@ async function openSSH(event: any) {
           return a.name.localeCompare(b.name);
         }
       });
-      data.value.push({
+      const newItem = {
         randomId: event.node.key.split("-")[0] + "-" + randomId,
         id: event.node.key,
         title: event.node.title,
@@ -336,9 +337,14 @@ async function openSSH(event: any) {
         copyList: [],
         copyPath: '',
         moveAndCopy: ''// 是复制还是移动 copy move
-      });
-      activeTabKey.value = event.node.key.split("-")[0] + "-" + randomId
-    })
+      };
+      data.value.push(newItem);
+      activeTabKey.value = newItem.randomId;
+      currentItem.value = newItem;
+    } catch (error) {
+      console.error('Error fetching SFTP list:', error);
+      Message.error('无法获取文件列表');
+    }
   }
 }
 
@@ -482,13 +488,42 @@ function handleSearch() {
 }
 
 // tab相关
-function handleDelete(key: any) {
-  data.value = data.value.filter((item: any) => item.randomId !== key)
+function handleDelete(key: string) {
+  const index = data.value.findIndex((item: any) => item.randomId === key);
+  if (index > -1) {
+    data.value.splice(index, 1);
+    
+    // 如果删除的是当前激活的标签页
+    if (key === activeTabKey.value) {
+      // 如果还有其他标签页
+      if (data.value.length > 0) {
+        // 如果删除的不是第一个标签页，则激活前一个标签页
+        if (index > 0) {
+          activeTabKey.value = data.value[index - 1].randomId;
+        } else {
+          // 如果删除的是第一个标签页，则激活下一个标签页
+          activeTabKey.value = data.value[0].randomId;
+        }
+      } else {
+        // 如果没有其他标签页了，将 activeTabKey 设置为 null
+        activeTabKey.value = null;
+      }
+    }
+    
+    // 更新 currentItem
+    if (data.value.length > 0) {
+      currentItem.value = data.value.find((item: any) => item.randomId === activeTabKey.value);
+    } else {
+      currentItem.value = null;
+    }
+  }
 }
 
 // 添加一个新的方法来处理标签页切换
 function handleTabChange(key: string) {
   activeTabKey.value = key;
+  // 更新 currentItem
+  currentItem.value = data.value.find((item: any) => item.randomId === key);
 }
 
 // 列表相关
@@ -562,7 +597,7 @@ function changePermissions() {
       // 初始化 permissionData
       permissionData.numericPermission = item.permissions.slice(-3);
 
-      // ��置所有者权限
+      // 置所有者权限
       permissionData.owner.read = (numericPermission & 0o400) !== 0;
       permissionData.owner.write = (numericPermission & 0o200) !== 0;
       permissionData.owner.execute = (numericPermission & 0o100) !== 0;
