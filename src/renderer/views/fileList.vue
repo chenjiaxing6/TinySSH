@@ -44,7 +44,16 @@
                 </a-input-group>
                 <!-- 按钮 -->
                 <div class="action-buttons" style="margin-bottom: 10px;">
-                  <a-button size="small" @click="createFile" type="primary">创建</a-button>
+                  <a-dropdown>
+                    <a-button size="small" type="primary">
+                      创建
+                      <icon-down />
+                    </a-button>
+                    <template #content>
+                      <a-doption @click="createFileAndFolder('file')">创建文件</a-doption>
+                      <a-doption @click="createFileAndFolder('folder')">创建文件夹</a-doption>
+                    </template>
+                  </a-dropdown>
                   <a-button-group size="small" style="margin-left: 10px;">
                     <a-button @click="openUpload(item)">上传</a-button>
                     <a-button @click="copyFile" :disabled="item.selectedRowKeys.length === 0">复制</a-button>
@@ -213,13 +222,22 @@
           :ok-button-props="{ disabled: !editedContent }" width="80%">
           <div ref="editorContainer"></div>
         </a-modal>
+
+      <!-- 创建文件/文件夹弹框 -->
+      <a-modal v-model:visible="createModalVisible" :title="createType === 'file' ? '创建文件' : '创建文件夹'" @ok="confirmCreate" @cancel="cancelCreate">
+        <a-form :model="createForm">
+          <a-form-item field="name" label="名称">
+            <a-input v-model="createForm.name" :placeholder="createType === 'file' ? '请输入文件名' : '请输入文件夹名'" />
+          </a-form-item>
+        </a-form>
+      </a-modal>
       </div>
     </template>
   </a-split>
 </template>
 <script setup lang="ts">
 import { reactive, ref, h, onMounted, nextTick, computed } from 'vue';
-import { IconFolder, IconComputer, IconSettings, IconRefresh, IconHome, IconFile } from '@arco-design/web-vue/es/icon';
+import { IconFolder, IconComputer, IconSettings, IconRefresh, IconHome, IconFile,IconDown } from '@arco-design/web-vue/es/icon';
 import "xterm/css/xterm.css"
 import { Message } from '@arco-design/web-vue';
 import { Modal, Checkbox, Input, Select } from '@arco-design/web-vue';
@@ -851,6 +869,43 @@ async function saveFile() {
   } catch (error: any) {
     console.error('保存文件错误:', error);
     Message.error('保存文件失败：' + error.message);
+  }
+}
+
+const createModalVisible = ref(false);
+const createType = ref('');
+const createForm = ref({
+  name: '',
+  fileType: ''
+});
+
+function createFileAndFolder(type: string) {
+  createForm.value.name = '';
+  createType.value = type;
+  createModalVisible.value = true;
+  createForm.value.fileType = type;
+}
+
+async function confirmCreate() {
+  if (createForm.value.name === '') {
+    Message.warning('请输入名称');
+    return;
+  }
+  createModalVisible.value = false;
+  // 创建文件或文件夹
+  let currentItem = getCurrentItem()
+  let param = {
+    sshId: currentItem.sshId,
+    path: `${currentItem.currentDirectory}/${createForm.value.name}`,
+    fileType: createForm.value.fileType
+  }
+  const result = await getElectronApi().createSftpFile(JSON.stringify(param));
+  if (result) {
+    Message.success('创建成功');
+    // 刷新文件列表
+    enterDirectoryInput(currentItem);
+  }else{
+    Message.error('创建失败');
   }
 }
 

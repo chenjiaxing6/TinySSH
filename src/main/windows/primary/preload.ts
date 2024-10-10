@@ -48,6 +48,7 @@ contextBridge.exposeInMainWorld("primaryWindowAPI", {
     pasteSftpFile: (param) => ipcRenderer.invoke('paste-sftp-file', param),
     readSftpFile: (param) => ipcRenderer.invoke('read-sftp-file', param),
     writeSftpFile: (param) => ipcRenderer.send('write-sftp-file', param),
+    createSftpFile: (param) => ipcRenderer.invoke('create-sftp-file', param),
 
     // 设置
     testWebDav: (param) => ipcRenderer.invoke('test-webdav', param),

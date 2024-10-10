@@ -25,6 +25,50 @@ class SFTPHandler {
         ipcMain.handle("paste-sftp-file", (event, sftpData) => this.handlePasteFile(event, sftpData));
         ipcMain.handle("read-sftp-file", (event, sftpData) => this.handleReadFile(event, sftpData));
         ipcMain.on("write-sftp-file", (event, sftpData) => this.handleWriteFile(event, sftpData));
+        ipcMain.handle("create-sftp-file", (event, sftpData) => this.handleCreateFile(event, sftpData));
+    }
+
+    async handleCreateFile(event, sftpData) {
+        let conn;
+        try {
+            sftpData = JSON.parse(sftpData);
+            const sshInfo = await sshOps.getSshInfoById(sftpData.sshId);
+            conn = await this.connectSSH(sshInfo);
+            const username = conn.config.username;
+            sftpData.path = sftpData.path.replace('~', `/home/${username}`);
+
+            const sftp: any = await new Promise((resolve, reject) => {
+                conn.sftp((err, sftp) => {
+                    if (err) reject(err);
+                    else resolve(sftp);
+                });
+            });
+
+            if (sftpData.fileType === 'file') {
+                await new Promise((resolve, reject) => {
+                    sftp.writeFile(sftpData.path, '', (err) => {
+                        if (err) reject(err);
+                        else resolve(null);
+                    });
+                });
+            } else if (sftpData.fileType === 'folder') {
+                await new Promise((resolve, reject) => {
+                    sftp.mkdir(sftpData.path, (err) => {
+                        if (err) reject(err);
+                        else resolve(null);
+                    });
+                });
+            } else {
+                throw new Error('无效的文件类型');
+            }
+
+            return { success: true, message: '创建成功' };
+        } catch (error: any) {
+            console.error('创建文件/文件夹错误:', error);
+            return { success: false, message: error.message };
+        } finally {
+            if (conn) conn.end();
+        }
     }
 
     async handleWriteFile(event, sftpData) {
