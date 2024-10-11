@@ -167,8 +167,8 @@ class SFTPHandler {
             const totalFiles = sftpData.files.length;
             for (let i = 0; i < totalFiles; i++) {
                 const file = sftpData.files[i];
-                const sourcePath = path.join(sftpData.sourcePath, file);
-                const targetPath = path.join(sftpData.targetPath, file);
+                const sourcePath = path.posix.join(sftpData.sourcePath, file);
+                const targetPath = path.posix.join(sftpData.targetPath, file);
 
                 const stats: any = await new Promise((resolve, reject) => {
                     sftp.stat(sourcePath, (err, stats) => {
@@ -400,7 +400,7 @@ class SFTPHandler {
                         });
 
                         for (const item of list) {
-                            await changePermissionsRecursively(path.join(filePath, item.filename));
+                            await changePermissionsRecursively(path.posix.join(filePath, item.filename));
                         }
                     }
                 } catch (error) {
@@ -411,7 +411,7 @@ class SFTPHandler {
 
             const promises = files.map(file => {
                 console.log("开始实际更改", dirPath, file);
-                const filePath = path.join(dirPath, file);
+                const filePath = path.posix.join(dirPath, file);
                 console.log("完整文件路径", filePath);
                 return changePermissionsRecursively(filePath);
             });
@@ -584,7 +584,7 @@ class SFTPHandler {
             };
 
             const promises = files.map(file => {
-                const filePath = path.join(remotePath, file);
+                const filePath = path.posix.join(remotePath, file);
                 return deleteRecursive(sftp, filePath);
             });
 
@@ -620,7 +620,7 @@ class SFTPHandler {
             }
 
             remotePath = remotePath.replace('~', '/home/' + conn.config.username)
-            const remoteFilePath = path.join(remotePath, path.basename(localFilePath));
+            const remoteFilePath = path.posix.join(remotePath, path.basename(localFilePath));
 
             fs.stat(localFilePath, (err, stats) => {
                 if (err) {

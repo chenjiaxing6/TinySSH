@@ -1,5 +1,6 @@
 import { createApp } from "vue";
 import "./style.css";
+import { createPinia } from 'pinia'
 
 // 导入 FontAwesome 图标
 import { library as fontAwesomeLibrary } from "@fortawesome/fontawesome-svg-core";
@@ -13,8 +14,10 @@ import ArcoVue from '@arco-design/web-vue';
 import router from "./router";
 
 const app = createApp(App);
+const pinia = createPinia()
 
 app.use(ArcoVue);
 app.use(router);
+app.use(pinia);
 app.component("FontAwesomeIcon", FontAwesomeIcon);
 app.mount("#app");

@@ -47,8 +47,8 @@ import AppearanceSettings from './settings/AppearanceSettings.vue';
 import AdvancedSettings from './settings/AdvancedSettings.vue';
 import SyncSettings from './settings/SyncSettings.vue';
 const visible = ref(false);
-const activeKey = ref('general');
-const currentSettingComponent = shallowRef(GeneralSettings);
+const activeKey = ref('sync');
+const currentSettingComponent = shallowRef(SyncSettings);
 
 const handleSelect = (key) => {
   activeKey.value = key;

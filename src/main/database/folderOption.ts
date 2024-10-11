@@ -34,6 +34,12 @@ export function getFolderInfo(): any {
     return db.prepare(folderQuery).all();
 }
 
+export function getAllFolders(): any {
+    const db = getDatabase();
+    const folderQuery = `SELECT * FROM t_folder WHERE isDelete != '1'`;
+    return db.prepare(folderQuery).all();
+}
+
 // 创建文件夹
 export function createFolder(folder: any): number {
     const db = getDatabase();
@@ -94,3 +100,17 @@ export function updateFolder(folder: any): void {
     `);
     stmt.run(folder.folderName, folder.parentFolder, now, folder.id);
 }
+
+export function saveFolders(folders: any) {
+    const db = getDatabase();
+    const stmt = db.prepare(`INSERT INTO t_folder (id, folderName, parentId, createTime, updateTime, isDelete, folderType) VALUES (?, ?, ?, ?, ?, ?, ?)`);
+    folders.forEach((folder: any) => {
+        stmt.run(folder.id.toString(), folder.folderName, folder.parentId, folder.createTime, folder.updateTime, folder.isDelete, folder.folderType);
+    });
+}
+export function deleteAllFolders() {
+    const db = getDatabase();
+    const stmt = db.prepare(`DELETE FROM t_folder`);
+    stmt.run();
+}
+

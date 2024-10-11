@@ -3,7 +3,7 @@ import {getDatabase} from './connection';
 export function getConfig(configName: string): any {
     const db = getDatabase();
     const configQuery = `SELECT * FROM configs left join config_items on configs.id = config_items.config_id WHERE configs.name = ?;`;
-    return db.prepare(configQuery).get(configName);
+    return db.prepare(configQuery).all(configName);
 }
 
 export function setConfig(configName: string, configItems: any): any {

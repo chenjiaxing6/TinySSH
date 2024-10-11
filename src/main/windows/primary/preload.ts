@@ -53,4 +53,6 @@ contextBridge.exposeInMainWorld("primaryWindowAPI", {
     // 设置
     testWebDav: (param) => ipcRenderer.invoke('test-webdav', param),
     saveSyncSettings: (param) => ipcRenderer.invoke('save-sync-settings', param),
+    asyncUploadData: () => ipcRenderer.invoke('async-upload-data'),
+    asyncDownloadData: () => ipcRenderer.invoke('async-download-data'),
 });

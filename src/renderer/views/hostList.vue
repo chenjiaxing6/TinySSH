@@ -11,7 +11,8 @@
     <template #first>
       <div class="tree-container">
         <div style="background-color: rgb(242, 242, 242);height: 100%;padding: 8px">
-          <div @contextmenu.prevent="onContextMenu">
+          <a-spin v-if="status === 'exec'"></a-spin>
+          <div @contextmenu.prevent="onContextMenu" v-if="status === 'done'">
             <a-tree :data="filteredTreeData" @select="handleSelect" :selected-keys="selectedKeys">
             </a-tree>
             <div v-if="showContextMenu"
@@ -159,7 +160,7 @@
   </a-modal>
 </template>
 <script setup lang="ts">
-import {reactive, ref, h, onMounted, nextTick, computed} from 'vue';
+import {reactive, ref, h, onMounted, nextTick, computed, watch} from 'vue';
 import {IconFolder, IconComputer, IconSettings} from '@arco-design/web-vue/es/icon';
 import {Terminal} from "xterm"
 import {FitAddon} from 'xterm-addon-fit'
@@ -463,8 +464,8 @@ function handleTabChange(key: string) {
 function getTreeData() {
   getElectronApi().getTreeInfo().then(res => {
     res.forEach(addIconToProps);
-    console.log(res);
     treeData.value = res;
+    statusStore.setLoading(false)
   })
 }
 
@@ -617,6 +618,17 @@ function sendToAllTerminals() {
 // 生命周期钩子
 onMounted(() => {
   getTreeData()
+})
+
+import { useStatusStore } from '../store/status'
+import { storeToRefs } from 'pinia'
+const statusStore = useStatusStore()
+const { isLoading, status } = storeToRefs(statusStore)
+// 监听 loading 状态
+watch(() => status.value, (newVal) => {
+  if (newVal === 'done') {
+    getTreeData()
+  }
 })
 
 // 事件监听器

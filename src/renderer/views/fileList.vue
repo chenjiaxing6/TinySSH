@@ -8,7 +8,8 @@
     <template #first>
       <div class="tree-container">
         <div style="background-color: rgb(242, 242, 242);height: 100%;padding: 8px">
-          <a-tree :data="filteredTreeData" @select="handleSelect" :selected-keys="selectedKeys">
+          <a-spin v-if="status === 'exec'"></a-spin>
+          <a-tree :data="filteredTreeData" @select="handleSelect" :selected-keys="selectedKeys" v-if="status === 'done'">
 
           </a-tree>
         </div>
@@ -225,7 +226,7 @@
 
         <!-- 创建文件/文件夹弹框 -->
         <a-modal v-model:visible="createModalVisible" :title="createType === 'file' ? '创建文件' : '创建文件夹'"
-          @ok="confirmCreate" @cancel="cancelCreate">
+          @ok="confirmCreate" @cancel="createModalVisible = false">
           <a-input v-model="createForm.name" :placeholder="createType === 'file' ? '请输入文件名' : '请输入文件夹名'" />
         </a-modal>
       </div>
@@ -233,7 +234,7 @@
   </a-split>
 </template>
 <script setup lang="ts">
-import { reactive, ref, h, onMounted, nextTick, computed } from 'vue';
+import { reactive, ref, h, onMounted, nextTick, computed, watchEffect, watch } from 'vue';
 import { IconFolder, IconComputer, IconSettings, IconRefresh, IconHome, IconFile, IconDown } from '@arco-design/web-vue/es/icon';
 import "xterm/css/xterm.css"
 import { Message } from '@arco-design/web-vue';
@@ -546,6 +547,7 @@ function getTreeData() {
   getElectronApi().getTreeInfo().then((res: any) => {
     res.forEach(addIconToProps);
     treeData.value = res;
+    statusStore.setLoading(false)
   })
 }
 
@@ -914,6 +916,17 @@ function closeEditModal() {
 // 生命周期钩子
 onMounted(() => {
   getTreeData()
+})
+
+import { useStatusStore } from '../store/status'
+import { storeToRefs } from 'pinia'
+const statusStore = useStatusStore()
+const { isLoading, status } = storeToRefs(statusStore)
+// 监听 loading 状态
+watch(() => status.value, (newVal) => {
+  if (newVal === 'done') {
+    getTreeData()
+  }
 })
 
 // 事件监听器

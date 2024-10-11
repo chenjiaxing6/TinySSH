@@ -27,6 +27,12 @@ export async function getSshInfoById(id: any): Promise<any> {
     });
 }
 
+export function getAllSsh(): any {
+    const db = getDatabase();
+    const sshQuery = `SELECT * FROM t_ssh WHERE isDelete != '1'`;
+    return db.prepare(sshQuery).all();
+}
+
 export async function createSsh(sshData: any): Promise<void> {
     const db = getDatabase();
     return new Promise((resolve, reject) => {
@@ -89,3 +95,17 @@ export async function updateSsh(sshData: any): Promise<void> {
         }
     });
 }
+
+export function saveSsh(sshList: any) {
+    const db = getDatabase();
+    const stmt = db.prepare(`INSERT INTO t_ssh (id, folderId, sshName, ip, port, userName, password,isDelete) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`);
+    sshList.forEach((ssh: any) => {
+        stmt.run(ssh.id.toString(), ssh.folderId, ssh.sshName, ssh.ip, ssh.port.toString(), ssh.userName, ssh.password, ssh.isDelete);
+    });
+}
+export function deleteAllSsh() {
+    const db = getDatabase();
+    const stmt = db.prepare(`DELETE FROM t_ssh`);
+    stmt.run();
+}
+
