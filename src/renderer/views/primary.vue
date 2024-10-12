@@ -25,13 +25,17 @@
         </router-link>
       </a-menu>
       <div style="position: fixed; bottom: 7px; left: 10px; display: flex; flex-direction: column; gap: 10px;">
-        <a-button shape="circle" @click="handleUploadData">
-          <a-spin v-if="isUploading"></a-spin>
-          <icon-upload v-if="!isUploading"/>
-        </a-button>
-        <a-button shape="circle" @click="handleDownloadData">
-          <icon-download/>
-        </a-button>
+        <a-tooltip content="上传数据">
+          <a-button shape="circle" @click="handleUploadData">
+            <a-spin v-if="isUploading"></a-spin>
+            <icon-upload v-if="!isUploading"/>
+          </a-button>
+        </a-tooltip>
+        <a-tooltip content="下载数据">
+          <a-button shape="circle" @click="handleDownloadData">
+            <icon-download/>
+          </a-button>
+        </a-tooltip>
         <a-button shape="circle" @click="onOpenDevTools">
           <icon-github/>
         </a-button>
