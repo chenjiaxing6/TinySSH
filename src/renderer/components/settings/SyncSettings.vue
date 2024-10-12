@@ -52,7 +52,7 @@
 </template>
 
 <script setup lang="ts">
-import { reactive } from 'vue'
+import { inject, onMounted, reactive } from 'vue'
 import { Message } from '@arco-design/web-vue'
 
 function getElectronApi() {
@@ -60,7 +60,7 @@ function getElectronApi() {
   return window.primaryWindowAPI;
 }
 
-const syncForm = reactive({
+const syncForm: any = reactive({
   method: '',
   s3: {
     endpoint: '',
@@ -77,7 +77,7 @@ const syncForm = reactive({
 })
 
 const saveSettings = () => {
-  // 这里添加保存设置的逻辑
+  console.log('保存同步设置:', syncForm)
   getElectronApi().saveSyncSettings(JSON.stringify(syncForm)).then((res: any) => {
     if (res.success) {
       Message.success('设置已保存')
@@ -96,5 +96,37 @@ const testConnection = () => {
       Message.error('连接测试失败: ' + res.message)
     }
   })
+}
+
+const initSyncSettings:any = inject('initSyncSettings')
+const loadSyncSettings = async () => {
+  console.log('进入同步设置页面')
+  // 先清空
+  syncForm.method = ''
+  syncForm.s3 = {}
+  syncForm.webdav = {}
+
+  const res = await getElectronApi().getConfig("syncMethod")
+  console.log('同步方法配置:', res)
+  if (res && res.length > 0) {
+    syncForm.method = res[0].value
+    loadConfigDetail(syncForm.method)
+  }
+}
+
+const loadConfigDetail = async (method: string) => {
+  const config = await getElectronApi().getConfig(method)
+  console.log('同步方法配置:', config)
+  if (config && config.length > 0) {
+    config.forEach((item: any) => {
+      // 添加空值检查
+      if (item.value !== null && item.value !== undefined) {
+        syncForm[method][item.key] = item.value
+      }
+    })
+  }
+}
+if (initSyncSettings) {
+  initSyncSettings.value = loadSyncSettings
 }
 </script>

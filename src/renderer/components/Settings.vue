@@ -40,7 +40,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, shallowRef } from 'vue';
+import { provide, ref, shallowRef } from 'vue';
 import { IconSettings, IconSkin, IconBulb, IconSync } from '@arco-design/web-vue/es/icon';
 import GeneralSettings from './settings/GeneralSettings.vue';
 import AppearanceSettings from './settings/AppearanceSettings.vue';
@@ -50,7 +50,7 @@ const visible = ref(false);
 const activeKey = ref('sync');
 const currentSettingComponent = shallowRef(SyncSettings);
 
-const handleSelect = (key) => {
+const handleSelect = (key: string) => {
   activeKey.value = key;
   switch (key) {
     case 'general':
@@ -71,10 +71,17 @@ const handleSelect = (key) => {
 const handleCancel = () => {
   visible.value = false;
 };
+// 添加一个用于触发同步设置初始化的 ref
+const initSyncSettings = ref(() => {});
+// 提供这个函数给子组件
+provide('initSyncSettings', initSyncSettings);
 
 defineExpose({
   show: () => {
     visible.value = true;
+    if (activeKey.value === 'sync') {
+    initSyncSettings.value();
+  }
   }
 });
 </script>

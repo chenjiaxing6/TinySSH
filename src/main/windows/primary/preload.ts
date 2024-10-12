@@ -55,4 +55,5 @@ contextBridge.exposeInMainWorld("primaryWindowAPI", {
     saveSyncSettings: (param) => ipcRenderer.invoke('save-sync-settings', param),
     asyncUploadData: () => ipcRenderer.invoke('async-upload-data'),
     asyncDownloadData: () => ipcRenderer.invoke('async-download-data'),
+    getConfig: (key: string) => ipcRenderer.invoke('get-config', key),
 });

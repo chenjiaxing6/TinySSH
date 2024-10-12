@@ -26,6 +26,7 @@
     "rebuild": "electron-rebuild -f -w better-sqlite3"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.670.0",
     "@xterm/xterm": "^5.5.0",
     "axios": "^1.6.7",
     "better-sqlite3": "^11.1.2",
