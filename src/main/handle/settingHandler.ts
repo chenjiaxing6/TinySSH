@@ -103,8 +103,23 @@ class SettingHandler {
         return { success: true, message: '连接成功' };
     }
 
+    async checkConfig() {
+        console.log('检查配置')
+        const syncMethod = await syncOps.getConfig("syncMethod");
+        console.log(syncMethod)
+        if(syncMethod == null || syncMethod.length == 0) {
+            return { success: false, message: '请先设置同步方式' };
+        }
+        return { success: true, message: '配置正确' };
+    }
+
     // 上传数据
     async handleUploadData(event: any) {
+        let checkResult = await this.checkConfig();
+        if(!checkResult.success) {
+            return checkResult;
+        }
+
         // 查询当前的同步方式
         const syncMethod = await syncOps.getConfig("syncMethod");
         const allFolders = await folderOps.getAllFolders();
@@ -195,6 +210,10 @@ class SettingHandler {
 
     // 下载数据
     async handleDownloadData(event: any) {
+        let checkResult = await this.checkConfig();
+        if(!checkResult.success) {
+            return checkResult;
+        }
         // 查询当前的同步方式
         const syncMethod = await syncOps.getConfig("syncMethod");
         if (syncMethod[0].value === "webdav") {

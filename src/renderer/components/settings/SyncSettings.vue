@@ -2,7 +2,7 @@
     <div>
       <a-form :model="syncForm">
         <a-form-item field="method" label="同步方式">
-          <a-select v-model="syncForm.method" placeholder="请选择同步方式">
+          <a-select v-model="syncForm.method" placeholder="请选择同步方式" @change="loadConfigDetail(syncForm.method)">
             <a-option value="s3">S3对象存储</a-option>
             <a-option value="webdav">WebDAV</a-option>
             <!-- 可以在此添加其他同步方式选项 -->
