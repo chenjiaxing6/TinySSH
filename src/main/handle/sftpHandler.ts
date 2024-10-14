@@ -34,8 +34,7 @@ class SFTPHandler {
             sftpData = JSON.parse(sftpData);
             const sshInfo = await sshOps.getSshInfoById(sftpData.sshId);
             conn = await this.connectSSH(sshInfo);
-            const username = conn.config.username;
-            sftpData.path = sftpData.path.replace('~', `/home/${username}`);
+            sftpData.path = this.resolvePath(conn, sftpData.path);
 
             const sftp: any = await new Promise((resolve, reject) => {
                 conn.sftp((err, sftp) => {
@@ -78,8 +77,7 @@ class SFTPHandler {
             console.log('接收到的 sftpData:', sftpData);
             const sshInfo = await sshOps.getSshInfoById(sftpData.sshId);
             conn = await this.connectSSH(sshInfo);
-            const username = conn.config.username;
-            sftpData.path = sftpData.path.replace('~', `/home/${username}`);
+            sftpData.path = this.resolvePath(conn, sftpData.path);
     
             const sftp: any = await new Promise((resolve, reject) => {
                 conn.sftp((err, sftp) => {
@@ -126,8 +124,7 @@ class SFTPHandler {
 
         const sshInfo = await sshOps.getSshInfoById(sftpData.sshId);
         const conn = await this.connectSSH(sshInfo);
-        const username = conn.config.username;
-        sftpData.path = sftpData.path.replace('~', `/home/${username}`);
+        sftpData.path = this.resolvePath(conn, sftpData.path);
 
         const sftp: any = await new Promise((resolve, reject) => {
             conn.sftp((err, sftp) => {
@@ -153,9 +150,8 @@ class SFTPHandler {
             sftpData = JSON.parse(sftpData);
             const sshInfo = await sshOps.getSshInfoById(sftpData.sshId);
             conn = await this.connectSSH(sshInfo);
-            const username = conn.config.username;
-            sftpData.sourcePath = sftpData.sourcePath.replace('~', `/home/${username}`);
-            sftpData.targetPath = sftpData.targetPath.replace('~', `/home/${username}`);
+            sftpData.sourcePath = this.resolvePath(conn, sftpData.sourcePath);
+            sftpData.targetPath = this.resolvePath(conn, sftpData.targetPath);
 
             const sftp: any = await new Promise((resolve, reject) => {
                 conn.sftp((err, sftp) => {
@@ -287,8 +283,8 @@ class SFTPHandler {
                 const sshInfo = await sshOps.getSshInfoById(sftpData.sshId);
                 const conn = await this.connectSSH(sshInfo);
 
-                sftpData.sourcePath = sftpData.sourcePath.replace('~', '/home/' + conn.config.username)
-                sftpData.targetPath = sftpData.targetPath.replace('~', '/home/' + conn.config.username)
+                sftpData.sourcePath = this.resolvePath(conn, sftpData.sourcePath);
+                sftpData.targetPath = this.resolvePath(conn, sftpData.targetPath);
 
                 let command = ''
                 if (sftpData.sourcePath === sftpData.targetPath) {
@@ -366,7 +362,7 @@ class SFTPHandler {
             }
             console.log("开始更改文件权限");
 
-            dirPath = dirPath.replace('~', '/home/' + conn.config.username);
+            dirPath = this.resolvePath(conn, dirPath);
 
             const changePermissionsRecursively = async (filePath) => {
                 try {
@@ -466,7 +462,7 @@ class SFTPHandler {
                 return;
             }
 
-            path = path.replace('~', '/home/' + conn.config.username)
+            path = this.resolvePath(conn, path);
 
             sftp.readdir(path || '.', (err, list) => {
                 if (err) {
@@ -557,7 +553,7 @@ class SFTPHandler {
                 reject(err);
                 return;
             }
-            remotePath = remotePath.replace('~', '/home/' + conn.config.username)
+            remotePath = this.resolvePath(conn, remotePath);
 
             const deleteRecursive = (sftp, path) => {
                 return new Promise((resolve, reject) => {
@@ -619,7 +615,7 @@ class SFTPHandler {
                 return;
             }
 
-            remotePath = remotePath.replace('~', '/home/' + conn.config.username)
+            remotePath = this.resolvePath(conn, remotePath);
             const remoteFilePath = path.posix.join(remotePath, path.basename(localFilePath));
 
             fs.stat(localFilePath, (err, stats) => {
@@ -661,6 +657,15 @@ class SFTPHandler {
         });
     }
 
+    // 在 SFTPHandler 类中添加以下方法
+
+    private resolvePath(conn, path: string): string {
+        const username = conn.config.username;
+        if (path.startsWith('~') || path === '') {
+            return path.replace(/^~/, `/home/${username}`);
+        }
+        return path;
+    }
 
 }
 

@@ -1,12 +1,12 @@
 {
   "name": "TinySSH",
-  "version": "0.0.1",
-  "description": "",
+  "version": "1.0.0",
+  "description": "a ssh and sftp client",
   "author": {
-    "name": "winsoft666",
-    "url": "https://github.com/winsoft666"
+    "name": "chenjiaxing6",
+    "url": "https://github.com/chenjiaxing6"
   },
-  "repository": "https://github.com/winsoft666/TinySSH",
+  "repository": "https://github.com/chenjiaxing6/TinySSH",
   "main": "build/main/main.js",
   "scripts": {
     "dev": "node scripts/dev-server.mjs development",

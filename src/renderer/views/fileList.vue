@@ -328,7 +328,7 @@ async function openSSH(event: any) {
   if (event.node.type === 'ssh') {
     const randomId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
     let sshId = event.node.key.split("-")[0]
-    let dir = '~'
+    let dir = '/'
     try {
       const res = await getElectronApi().getSftpList({ 'sshId': sshId, 'toPath': dir });
       // 将文件排序，文件夹在前，文件在后
@@ -469,7 +469,7 @@ async function saveTemporaryFile(file: File): Promise<string> {
 }
 
 function enterDirectoryRoot(item: any) {
-  item.currentDirectory = '~'
+  item.currentDirectory = '/'
   enterDirectoryInput(item)
 }
 
