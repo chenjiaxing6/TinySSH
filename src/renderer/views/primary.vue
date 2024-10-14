@@ -120,7 +120,9 @@ async function handleDownloadData() {
 }
 
 function onOpenDevTools() {
-  utils.openDevTools();
+  // 跳转到gitHub
+  utils.openExternalLink('https://github.com/chenjiaxing6/TinySSH');
+  // utils.openDevTools();
 }
 </script>
 <style scoped>
