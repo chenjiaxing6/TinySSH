@@ -33,10 +33,8 @@ contextBridge.exposeInMainWorld("primaryWindowAPI", {
     createSsh: (sshData: { parentFolder: string; name: string; ip: string; port: number; username: string; password: string }) => 
         ipcRenderer.invoke("create-ssh", sshData),
     deleteSsh: (sshId: number) => ipcRenderer.invoke("delete-ssh", sshId),
-    updateSsh: (sshData: { id: number; parentFolder: string; name: string; ip: string; port: number; username: string; password: string }) => 
-        ipcRenderer.invoke("update-ssh", sshData),
-    updateFolder: (folderData: { id: number; parentFolder: string; folderName: string }) => 
-        ipcRenderer.invoke("update-folder", folderData),
+    updateSsh: (sshData) => ipcRenderer.invoke("update-ssh", sshData),
+    updateFolder: (folderData) => ipcRenderer.invoke("update-folder", folderData),
 
     // sftp
     getSftpList:(param:string) => ipcRenderer.invoke("get-sftp-list",param),

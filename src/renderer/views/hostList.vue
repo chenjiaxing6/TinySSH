@@ -466,6 +466,11 @@ function getTreeData() {
     res.forEach(addIconToProps);
     treeData.value = res;
     statusStore.setLoading(false)
+
+    // 刷新所选的数据
+    if (selectedNode.value) {
+      selectedNode.value = treeData.value.find(node => node.id === selectedNode.value.id);
+    }
   })
 }
 
