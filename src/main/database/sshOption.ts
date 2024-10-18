@@ -2,7 +2,7 @@ import {getDatabase} from './connection';
 
 export function getSshInfo(): any {
     const db = getDatabase();
-    const sshQuery = `SELECT folderId, s.id AS sshId, s.sshName, s.ip, s.port, s.userName
+    const sshQuery = `SELECT folderId, s.id AS sshId,s.password, s.sshName, s.ip, s.port, s.userName
                       FROM t_ssh s
                       WHERE s.isDelete != '1';`;
 

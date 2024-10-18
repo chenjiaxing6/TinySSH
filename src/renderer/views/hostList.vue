@@ -322,7 +322,7 @@ function onMenuItemClick(action: any) {
           // 转为num
           hostForm.port = Number(selectedNode.value.port);
           hostForm.username = selectedNode.value.userName;
-          hostForm.password = ''; // 出于安全考虑,不回显密码
+          hostForm.password = selectedNode.value.password; 
           if (selectedNode.value.folderId) {
             hostForm.parentFolder = selectedNode.value.folderId + "-folder";
           }
@@ -466,7 +466,6 @@ function getTreeData() {
     res.forEach(addIconToProps);
     treeData.value = res;
     statusStore.setLoading(false)
-
     // 刷新所选的数据
     if (selectedNode.value) {
       selectedNode.value = treeData.value.find(node => node.id === selectedNode.value.id);

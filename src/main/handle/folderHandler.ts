@@ -42,12 +42,12 @@ export function registerFolderHandlers() {
                 const sshNode = {
                     ...ssh,
                     type: 'ssh',
+                    password: ssh.password,
                     title: ssh.sshName,
                     key: ssh.sshId+'-ssh',
                     children: []
                 };
                 if (ssh.folderId === null || ssh.folderId === undefined || ssh.folderId === '') {
-                    console.log(ssh)
                     // 如果SSH没有关联文件夹，添加到根目录
                     rootFolders.push(sshNode);
                 } else {
