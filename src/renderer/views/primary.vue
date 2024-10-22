@@ -23,6 +23,14 @@
             文件管理
           </a-menu-item>
         </router-link>
+        <router-link to="/primary/quickCommands">
+          <a-menu-item key="3">
+            <template #icon>
+              <icon-command />
+            </template>
+            快捷命令
+          </a-menu-item>
+        </router-link>
       </a-menu>
       <div style="position: fixed; bottom: 7px; left: 10px; display: flex; flex-direction: column; gap: 10px;">
         <a-tooltip content="上传数据">
@@ -56,7 +64,7 @@
 </template>
 <script setup>
 import utils from "@utils/renderer";
-import {IconSettings, IconGithub,IconFolder,IconUpload,IconDownload} from '@arco-design/web-vue/es/icon';
+import {IconSettings, IconGithub,IconFolder,IconUpload,IconDownload,IconCommand} from '@arco-design/web-vue/es/icon';
 import {
   IconMenuFold,
   IconMenuUnfold,

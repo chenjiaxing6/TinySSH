@@ -17,6 +17,11 @@ const routeMap: Array<RouteRecordRaw> = [
                 name: "file-list",
                 component: () => import("@views/fileList.vue"),
             },
+            {
+                path: "quickCommands",
+                name: "quick-commands",
+                component: () => import("@views/command.vue"),
+            },
         ]
     },
     {

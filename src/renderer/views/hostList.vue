@@ -67,7 +67,15 @@
               v-model="globalInput"
               placeholder="在此输入命令，回车发送到所有终端"
               @keyup.enter="sendToAllTerminals"
+              :style="{ width: 'calc(100% - 50px)' }"
           />
+          <a-tooltip content="快捷命令">
+            <a-button type="primary" shape="circle" @click="showCommandModal" :style="{ marginLeft: '10px' }">
+              <template #icon>
+                <icon-command />
+              </template>
+            </a-button>
+          </a-tooltip>
         </div>
       </div>
     </template>
@@ -158,10 +166,47 @@
       </a-form-item>
     </a-form>
   </a-modal>
+
+  <!-- 添加新的命令执行模态框 -->
+  <a-modal
+    v-model:visible="commandModalVisible"
+    title="快捷命令"
+    @ok="handleCommandModalOk"
+    @cancel="handleCommandModalCancel"
+    :footer="false"
+    width="600px"
+  >
+    <a-tabs>
+      <a-tab-pane key="1" title="命令列表">
+        <a-list :data="commandList">
+          <template #item="{ item }">
+            <a-list-item>
+              <a-space>
+                <span>{{ item.name }}</span>
+                <a-button size="small" @click="executeCommand(item)">执行</a-button>
+              </a-space>
+            </a-list-item>
+          </template>
+        </a-list>
+      </a-tab-pane>
+      <a-tab-pane key="2" title="脚本列表">
+        <a-list :data="scriptList">
+          <template #item="{ item }">
+            <a-list-item>
+              <a-space>
+                <span>{{ item.name }}</span>
+                <a-button size="small" @click="executeScript(item)">执行</a-button>
+              </a-space>
+            </a-list-item>
+          </template>
+        </a-list>
+      </a-tab-pane>
+    </a-tabs>
+  </a-modal>
 </template>
 <script setup lang="ts">
 import {reactive, ref, h, onMounted, nextTick, computed, watch} from 'vue';
-import {IconFolder, IconComputer, IconSettings} from '@arco-design/web-vue/es/icon';
+import {IconFolder, IconComputer, IconSettings, IconCommand} from '@arco-design/web-vue/es/icon';
 import {Terminal} from "xterm"
 import {FitAddon} from 'xterm-addon-fit'
 import "xterm/css/xterm.css"
@@ -205,6 +250,17 @@ const editingItemId = ref(null);
 const globalInput = ref('');
 const terminalList: any = ref([]);
 const socketList: any = ref([]);
+const commandModalVisible = ref(false);
+const commandList = ref([
+  { name: '查看系统信息', command: 'uname -a' },
+  { name: '查看磁盘使用情况', command: 'df -h' },
+  // 添加更多预定义命令
+]);
+const scriptList = ref([
+  { name: '更新系统', script: 'update_system.sh' },
+  { name: '备份数据', script: 'backup_data.sh' },
+  // 添加更多预定义脚本
+]);
 
 // 计算属性
 const filteredTreeData = computed(() => {
@@ -640,6 +696,31 @@ document.addEventListener('click', () => {
   showContextMenu.value = false;
 });
 
+// 添加新的方法
+function showCommandModal() {
+  commandModalVisible.value = true;
+}
+
+function handleCommandModalOk() {
+  commandModalVisible.value = false;
+}
+
+function handleCommandModalCancel() {
+  commandModalVisible.value = false;
+}
+
+function executeCommand(item: { name: string; command: string }) {
+  globalInput.value = item.command;
+  sendToAllTerminals();
+  commandModalVisible.value = false;
+}
+
+function executeScript(item: { name: string; script: string }) {
+  // 这里需要实现脚本执行的逻辑
+  console.log(`执行脚本: ${item.script}`);
+  commandModalVisible.value = false;
+}
+
 </script>
 
 <style scoped>
@@ -697,9 +778,11 @@ document.addEventListener('click', () => {
 }
 
 .input-container {
-  height: 30px;
+  height: 40px;
   padding: 5px;
   background-color: #f0f0f0;
+  display: flex;
+  align-items: center;
 }
 
 .empty-state {
